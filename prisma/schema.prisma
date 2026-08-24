@@ -92,7 +92,30 @@ model Product {
 
 model SiteConfig {
   id          String   @id @default(cuid())
-  key         String   @unique  // e.g. "instagram_url", "whatsapp_number"
+  key         String   @unique  // e.g. "instagram_url", "whatsapp_number", "discord_url", "tiktok_url", "youtube_url", "whatsapp_group_url"
   value       String
+  updatedAt   DateTime @updatedAt
+}
+
+model LocalStore {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  logoUrl      String?
+  location     String
+  phone        String?
+  instagramUrl String?
+  schedule     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model CommunityGroup {
+  id          String   @id @default(cuid())
+  name        String
+  tcgName     String   @default("GENERAL") // "Yu-Gi-Oh!", "One Piece", "Digimon", "GENERAL"
+  inviteUrl   String
+  description String?
+  createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

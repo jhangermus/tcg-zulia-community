@@ -237,4 +237,105 @@ export async function deleteDecklist(id: string) {
   revalidatePath("/decks");
 }
 
+// --- LOCAL STORE / PARTNERS ACTIONS ---
+
+const LocalStoreSchema = z.object({
+  name: z.string().min(1, "Nombre de la tienda requerido"),
+  location: z.string().min(1, "Ubicación requerida"),
+  description: z.string().optional(),
+  phone: z.string().optional(),
+  instagramUrl: z.string().optional(),
+  schedule: z.string().optional(),
+  logoUrl: z.string().optional(),
+});
+
+export async function createLocalStore(formData: FormData) {
+  await requireAdmin();
+  const validated = LocalStoreSchema.safeParse({
+    name: formData.get("name"),
+    location: formData.get("location"),
+    description: formData.get("description") || undefined,
+    phone: formData.get("phone") || undefined,
+    instagramUrl: formData.get("instagramUrl") || undefined,
+    schedule: formData.get("schedule") || undefined,
+    logoUrl: formData.get("logoUrl") || undefined,
+  });
+
+  if (!validated.success) return;
+
+  await prisma.localStore.create({ data: validated.data });
+  revalidatePath("/admin/comunidad");
+  revalidatePath("/comunidad");
+  revalidatePath("/");
+}
+
+export async function deleteLocalStore(id: string) {
+  await requireAdmin();
+  await prisma.localStore.delete({ where: { id } });
+  revalidatePath("/admin/comunidad");
+  revalidatePath("/comunidad");
+}
+
+// --- COMMUNITY GROUPS ACTIONS ---
+
+const CommunityGroupSchema = z.object({
+  name: z.string().min(1, "Nombre del grupo requerido"),
+  tcgName: z.string().default("GENERAL"),
+  inviteUrl: z.string().min(1, "Enlace de WhatsApp requerido"),
+  description: z.string().optional(),
+});
+
+export async function createCommunityGroup(formData: FormData) {
+  await requireAdmin();
+  const validated = CommunityGroupSchema.safeParse({
+    name: formData.get("name"),
+    tcgName: formData.get("tcgName") || "GENERAL",
+    inviteUrl: formData.get("inviteUrl"),
+    description: formData.get("description") || undefined,
+  });
+
+  if (!validated.success) return;
+
+  await prisma.communityGroup.create({ data: validated.data });
+  revalidatePath("/admin/comunidad");
+  revalidatePath("/comunidad");
+  revalidatePath("/");
+}
+
+export async function deleteCommunityGroup(id: string) {
+  await requireAdmin();
+  await prisma.communityGroup.delete({ where: { id } });
+  revalidatePath("/admin/comunidad");
+  revalidatePath("/comunidad");
+}
+
+// --- OFFICIAL SOCIAL LINKS ACTIONS ---
+
+export async function updateSiteSocials(formData: FormData) {
+  await requireAdmin();
+  const keys = [
+    "instagram_url",
+    "tiktok_url",
+    "discord_url",
+    "youtube_url",
+    "whatsapp_group_url",
+    "whatsapp_number",
+  ];
+
+  for (const key of keys) {
+    const val = formData.get(key);
+    if (typeof val === "string") {
+      await prisma.siteConfig.upsert({
+        where: { key },
+        update: { value: val.trim() },
+        create: { key, value: val.trim() },
+      });
+    }
+  }
+
+  revalidatePath("/admin/comunidad");
+  revalidatePath("/comunidad");
+  revalidatePath("/");
+}
+
 
