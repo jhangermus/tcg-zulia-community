@@ -45,7 +45,7 @@ export default async function RankingPage() {
     .map((p, i) => ({ ...p, rank: i + 1 }));
 
   return (
-    <div className="p-6 md:p-8 space-y-8 bg-[#05080f] min-h-screen">
+    <div className="p-6 md:p-8 space-y-8 bg-[#04070d] min-h-screen bg-tactical-grid">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
         <div>
@@ -56,13 +56,13 @@ export default async function RankingPage() {
             Tabla de clasificación general de la comunidad de TCG en el Estado Zulia (Temporada activa).
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-xs font-bold text-slate-300">
+        <div className="flex items-center gap-2 bg-[#0a0f1d] border border-slate-800 px-4 py-2 text-xs font-bold text-slate-300 clip-chamfer-tr">
           <Flame className="w-4 h-4 text-orange-500" /> TEMPORADA ACTIVA
         </div>
       </div>
 
       {ranking.length === 0 ? (
-        <div className="text-center py-20 text-slate-500">
+        <div className="text-center py-20 text-slate-500 clip-chamfer-tr bg-[#070b14] border border-slate-800 p-12">
           <Crown className="w-16 h-16 mx-auto mb-4 opacity-20 text-yellow-400" />
           <p className="font-bold text-lg text-white">El ranking se construirá automáticamente</p>
           <p className="text-xs text-slate-400 mt-1">
@@ -75,8 +75,8 @@ export default async function RankingPage() {
           {ranking.length >= 1 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
               {/* 2nd Place */}
-              <div className="order-2 md:order-1 bg-[#0a0e17] border border-slate-700/60 rounded-2xl p-6 flex flex-col items-center text-center shadow-xl">
-                <div className="w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-400 overflow-hidden flex items-center justify-center font-black text-2xl text-slate-300 mb-3 shadow-lg relative">
+              <div className="order-2 md:order-1 bg-[#070b14] border border-slate-700/60 p-6 flex flex-col items-center text-center shadow-xl clip-chamfer-tr">
+                <div className="w-20 h-20 bg-slate-800 border-2 border-slate-400 rounded-sm overflow-hidden flex items-center justify-center font-black text-2xl text-slate-300 mb-3 shadow-lg relative">
                   {ranking[1]?.coverUrl ? (
                     <img src={ranking[1].coverUrl} alt="2nd" className="w-full h-full object-cover" />
                   ) : (
@@ -90,7 +90,7 @@ export default async function RankingPage() {
                 <h3 className="text-2xl font-black text-white mt-1">{ranking[1]?.name ?? "—"}</h3>
                 <p className="text-xs font-bold text-slate-400 mb-4">{ranking[1]?.mainTcg ?? ""}</p>
                 {ranking[1] && (
-                  <div className="w-full bg-slate-900/80 rounded-xl p-3 border border-slate-800 grid grid-cols-2 gap-2 text-center text-xs">
+                  <div className="w-full bg-[#0c1220] p-3 border border-slate-800 grid grid-cols-2 gap-2 text-center text-xs">
                     <div><p className="text-slate-500 font-bold text-[9px]">PUNTOS</p><p className="font-black text-white text-base">{ranking[1].pts}</p></div>
                     <div><p className="text-slate-500 font-bold text-[9px]">TOPS</p><p className="font-black text-white text-base">{ranking[1].tops}</p></div>
                   </div>
@@ -98,8 +98,8 @@ export default async function RankingPage() {
               </div>
 
               {/* 1st Place */}
-              <div className="order-1 md:order-2 bg-gradient-to-b from-yellow-400/15 via-[#0a0e17] to-[#0a0e17] border-2 border-yellow-400/60 rounded-2xl p-6 flex flex-col items-center text-center shadow-2xl scale-105">
-                <div className="w-24 h-24 rounded-full bg-yellow-400 border-4 border-[#0a0e17] overflow-hidden flex items-center justify-center font-black text-3xl text-slate-950 mb-3 shadow-yellow-400/30 shadow-lg relative">
+              <div className="order-1 md:order-2 bg-gradient-to-b from-yellow-400/20 via-[#0a0f1d] to-[#070b14] border-2 border-yellow-400/80 p-6 flex flex-col items-center text-center shadow-2xl scale-105 clip-chamfer-tr hud-box hud-bracket-yellow">
+                <div className="w-24 h-24 bg-yellow-400 border-4 border-[#070b14] rounded-sm overflow-hidden flex items-center justify-center font-black text-3xl text-slate-950 mb-3 shadow-yellow-400/30 shadow-lg relative">
                   {ranking[0]?.coverUrl ? (
                     <img src={ranking[0].coverUrl} alt="1st" className="w-full h-full object-cover" />
                   ) : (
@@ -109,20 +109,20 @@ export default async function RankingPage() {
                     #1
                   </div>
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-yellow-400 bg-yellow-400/10 border border-yellow-400/30 px-3 py-0.5 rounded-full">
+                <span className="text-[10px] font-black uppercase tracking-wider text-yellow-400 bg-yellow-400/10 border border-yellow-400/30 px-3 py-0.5 clip-tag-angled">
                   NÚMERO 1 DEL ZULIA
                 </span>
                 <h3 className="text-3xl font-black text-white mt-2">{ranking[0].name}</h3>
                 <p className="text-xs font-bold text-yellow-400 mb-4">{ranking[0].mainTcg}</p>
-                <div className="w-full bg-slate-900/90 rounded-xl p-3 border border-yellow-400/30 grid grid-cols-2 gap-2 text-center text-xs">
+                <div className="w-full bg-[#0c1220] p-3 border border-yellow-400/40 grid grid-cols-2 gap-2 text-center text-xs">
                   <div><p className="text-slate-400 font-bold text-[9px]">PUNTOS</p><p className="font-black text-yellow-400 text-lg">{ranking[0].pts}</p></div>
                   <div><p className="text-slate-400 font-bold text-[9px]">TOPS</p><p className="font-black text-white text-lg">{ranking[0].tops}</p></div>
                 </div>
               </div>
 
               {/* 3rd Place */}
-              <div className="order-3 bg-[#0a0e17] border border-amber-800/40 rounded-2xl p-6 flex flex-col items-center text-center shadow-xl">
-                <div className="w-20 h-20 rounded-full bg-amber-950 border-2 border-amber-600 overflow-hidden flex items-center justify-center font-black text-2xl text-amber-500 mb-3 shadow-lg relative">
+              <div className="order-3 bg-[#070b14] border border-amber-800/40 p-6 flex flex-col items-center text-center shadow-xl clip-chamfer-tr">
+                <div className="w-20 h-20 bg-amber-950 border-2 border-amber-600 rounded-sm overflow-hidden flex items-center justify-center font-black text-2xl text-amber-500 mb-3 shadow-lg relative">
                   {ranking[2]?.coverUrl ? (
                     <img src={ranking[2].coverUrl} alt="3rd" className="w-full h-full object-cover" />
                   ) : (
@@ -136,7 +136,7 @@ export default async function RankingPage() {
                 <h3 className="text-2xl font-black text-white mt-1">{ranking[2]?.name ?? "—"}</h3>
                 <p className="text-xs font-bold text-slate-400 mb-4">{ranking[2]?.mainTcg ?? ""}</p>
                 {ranking[2] && (
-                  <div className="w-full bg-slate-900/80 rounded-xl p-3 border border-slate-800 grid grid-cols-2 gap-2 text-center text-xs">
+                  <div className="w-full bg-[#0c1220] p-3 border border-slate-800 grid grid-cols-2 gap-2 text-center text-xs">
                     <div><p className="text-slate-500 font-bold text-[9px]">PUNTOS</p><p className="font-black text-white text-base">{ranking[2].pts}</p></div>
                     <div><p className="text-slate-500 font-bold text-[9px]">TOPS</p><p className="font-black text-white text-base">{ranking[2].tops}</p></div>
                   </div>
@@ -146,7 +146,7 @@ export default async function RankingPage() {
           )}
 
           {/* Full Leaderboard Table */}
-          <div className="bg-[#0a0e17] border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div className="bg-[#070b14] border border-slate-800 overflow-hidden shadow-xl clip-chamfer-tr">
             <div className="p-6 border-b border-slate-800 flex justify-between items-center">
               <h2 className="font-black text-white text-lg">Tabla General de Clasificación</h2>
               <span className="text-xs text-slate-500 font-bold">Actualizado en tiempo real</span>
@@ -166,7 +166,7 @@ export default async function RankingPage() {
                   {ranking.map((player) => (
                     <tr key={player.rank} className="hover:bg-slate-800/30 transition-colors">
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full font-black text-xs ${
+                        <span className={`inline-flex items-center justify-center w-7 h-7 font-black text-xs rounded-sm ${
                           player.rank === 1 ? "bg-yellow-400 text-slate-950" :
                           player.rank === 2 ? "bg-slate-300 text-slate-950" :
                           player.rank === 3 ? "bg-amber-600 text-white" :
@@ -177,7 +177,7 @@ export default async function RankingPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center shrink-0">
+                          <div className="w-9 h-9 bg-slate-800 border border-slate-700 rounded-sm overflow-hidden flex items-center justify-center shrink-0">
                             {player.coverUrl ? (
                               <img src={player.coverUrl} alt={player.name} className="w-full h-full object-cover" />
                             ) : (

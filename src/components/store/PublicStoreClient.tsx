@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingBag, Search, Check, AlertCircle } from "lucide-react";
+import { ShoppingBag, Search, ExternalLink, Check, ShieldCheck } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 
 export interface ProductItem {
@@ -20,43 +20,49 @@ interface PublicStoreClientProps {
   whatsappNumber?: string;
 }
 
-export function PublicStoreClient({ products, whatsappNumber = "584120000000" }: PublicStoreClientProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>("TODOS");
-  const [searchQuery, setSearchQuery] = useState<string>("");
+const CATEGORIES = [
+  { id: "ALL", label: "TODOS" },
+  { id: "SLEEVES", label: "PROTECTORES / SLEEVES" },
+  { id: "PLAYMATS", label: "TAPETES / PLAYMATS" },
+  { id: "DECK_BOXES", label: "DECK BOXES" },
+  { id: "SINGLES", label: "CARTAS SUELTAS" },
+  { id: "ACCESORIOS", label: "ACCESORIOS" },
+];
 
-  // Extract available unique categories
-  const dynamicCategories = ["TODOS", ...Array.from(new Set(products.map((p) => p.category).filter(Boolean))) as string[]];
-  const categories = dynamicCategories.length > 1 ? dynamicCategories : ["TODOS", "SLEEVES", "PLAYMATS", "ACCESORIOS", "SINGLES"];
+export function PublicStoreClient({
+  products,
+  whatsappNumber = "584120000000",
+}: PublicStoreClientProps) {
+  const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Filter products
   const filtered = products.filter((p) => {
-    const matchesCategory =
-      selectedCategory === "TODOS" ||
-      p.category?.toUpperCase() === selectedCategory.toUpperCase();
-    const matchesSearch =
-      !searchQuery.trim() ||
+    const matchCategory =
+      selectedCategory === "ALL" ||
+      (p.category && p.category.toUpperCase() === selectedCategory);
+    const matchQuery =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.description?.toLowerCase().includes(searchQuery.toLowerCase());
-
-    return matchesCategory && matchesSearch;
+      (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchCategory && matchQuery;
   });
 
   return (
     <div className="space-y-8">
-      {/* Category Pills & Search Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Category Bar & Search */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+        {/* Category Pills */}
         <div className="flex flex-wrap gap-2">
-          {categories.map((cat) => (
+          {CATEGORIES.map((cat) => (
             <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`text-xs font-black px-4 py-2 rounded-xl border transition-all ${
-                selectedCategory.toUpperCase() === cat.toUpperCase()
-                  ? "bg-yellow-400 text-slate-950 border-yellow-400 shadow-lg shadow-yellow-400/20 scale-105"
-                  : "bg-slate-900/80 hover:bg-slate-800 border-slate-800 text-slate-300 hover:text-white"
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`text-xs font-black px-4 py-2 transition-all clip-chamfer-tr ${
+                selectedCategory === cat.id
+                  ? "bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/20"
+                  : "bg-[#070b14] hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white"
               }`}
             >
-              {cat}
+              {cat.label}
             </button>
           ))}
         </div>
@@ -69,14 +75,14 @@ export function PublicStoreClient({ products, whatsappNumber = "584120000000" }:
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar accesorios o cartas..."
-            className="w-full bg-slate-900 border border-slate-800 text-white pl-9 pr-4 py-2 rounded-xl text-xs focus:outline-none focus:border-yellow-400 transition-colors"
+            className="w-full bg-[#070b14] border border-slate-800 text-white pl-9 pr-4 py-2 text-xs focus:outline-none focus:border-yellow-400 transition-colors clip-chamfer-tr"
           />
         </div>
       </div>
 
       {/* Products Grid */}
       {filtered.length === 0 ? (
-        <div className="bg-[#0a0e17] border border-slate-800 rounded-2xl p-16 text-center text-slate-500 space-y-3">
+        <div className="bg-[#070b14] border border-slate-800 p-16 text-center text-slate-500 space-y-3 clip-chamfer-tr">
           <ShoppingBag className="w-16 h-16 mx-auto opacity-20 text-yellow-400" />
           <h3 className="text-lg font-black text-white">No se encontraron productos</h3>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
@@ -97,11 +103,11 @@ export function PublicStoreClient({ products, whatsappNumber = "584120000000" }:
             return (
               <div
                 key={product.id}
-                className="bg-[#0a0e17] border border-slate-800 hover:border-yellow-400/40 rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-200 group shadow-xl hover:-translate-y-1 hover:shadow-2xl"
+                className="bg-[#070b14] border border-slate-800 hover:border-yellow-400/50 overflow-hidden flex flex-col justify-between transition-all duration-200 group shadow-xl hover:-translate-y-1 hover:shadow-2xl clip-chamfer-tr relative"
               >
                 <div>
                   {/* Product Image */}
-                  <div className="h-52 bg-slate-900 relative overflow-hidden flex items-center justify-center">
+                  <div className="h-52 bg-[#0c1220] relative overflow-hidden flex items-center justify-center">
                     {product.imageUrl ? (
                       <img
                         src={product.imageUrl}
@@ -113,14 +119,14 @@ export function PublicStoreClient({ products, whatsappNumber = "584120000000" }:
                     )}
 
                     {product.category && (
-                      <span className="absolute top-3 left-3 bg-slate-950/85 backdrop-blur-md text-[9px] font-black text-slate-300 px-2.5 py-1 rounded-md border border-slate-800 uppercase tracking-wider">
+                      <span className="absolute top-2 left-2 bg-slate-950/90 text-[9px] font-black text-slate-300 px-2.5 py-0.5 border border-slate-800 uppercase tracking-wider clip-tag-angled">
                         {product.category}
                       </span>
                     )}
 
                     {isOutOfStock && (
-                      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center">
-                        <span className="bg-red-600 text-white font-black text-xs px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg">
+                      <div className="absolute inset-0 bg-slate-950/85 flex items-center justify-center">
+                        <span className="bg-red-600 text-white font-black text-xs px-4 py-1.5 uppercase tracking-wider shadow-lg clip-tag-chevron">
                           AGOTADO
                         </span>
                       </div>
@@ -138,44 +144,41 @@ export function PublicStoreClient({ products, whatsappNumber = "584120000000" }:
                   </div>
                 </div>
 
-                {/* Pricing and Action */}
+                {/* Price & Action */}
                 <div className="p-5 pt-0">
-                  <div className="flex items-center justify-between mb-4 border-t border-slate-800/80 pt-4">
+                  <div className="flex items-baseline justify-between mb-3 border-t border-slate-800/80 pt-3">
                     <div>
-                      <span className="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">PRECIO</span>
-                      <span className="text-2xl font-black text-white">${product.price.toFixed(2)}</span>
+                      <span className="text-[10px] text-slate-500 font-black block uppercase tracking-wider">PRECIO</span>
+                      <span className="text-2xl font-black text-white">
+                        ${product.price.toFixed(2)}
+                      </span>
                     </div>
 
-                    {!isOutOfStock ? (
-                      <div className="flex items-center gap-1.5 text-xs text-green-400 font-bold bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Disponible ({product.stock})</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5 text-xs text-red-400 font-bold bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-full">
-                        <AlertCircle className="w-3.5 h-3.5" />
-                        <span>Sin stock</span>
-                      </div>
-                    )}
+                    <span className={`text-[10px] font-black px-2 py-0.5 border clip-tag-angled ${
+                      isOutOfStock
+                        ? "bg-red-500/10 text-red-400 border-red-500/30"
+                        : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                    }`}>
+                      {isOutOfStock ? "Agotado" : `Stock: ${product.stock}`}
+                    </span>
                   </div>
 
-                  {!isOutOfStock ? (
-                    <a
-                      href={whatsappUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl text-xs transition-all tracking-wider shadow-lg shadow-emerald-500/20 hover:scale-[1.02]"
-                    >
-                      <FaWhatsapp className="w-4 h-4" /> PEDIR POR WHATSAPP
-                    </a>
-                  ) : (
-                    <button
-                      disabled
-                      className="w-full flex items-center justify-center gap-2 bg-slate-800 text-slate-500 font-bold py-3 rounded-xl text-xs cursor-not-allowed uppercase tracking-wider"
-                    >
-                      NO DISPONIBLE
-                    </button>
-                  )}
+                  <a
+                    href={isOutOfStock ? "#" : whatsappUrl}
+                    target={isOutOfStock ? undefined : "_blank"}
+                    rel={isOutOfStock ? undefined : "noopener noreferrer"}
+                    onClick={(e) => {
+                      if (isOutOfStock) e.preventDefault();
+                    }}
+                    className={`w-full flex items-center justify-center gap-2 py-3 text-xs font-black tracking-wider transition-all clip-btn-tactical ${
+                      isOutOfStock
+                        ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                        : "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 hover:scale-[1.02]"
+                    }`}
+                  >
+                    <FaWhatsapp className="w-4 h-4" />
+                    {isOutOfStock ? "NO DISPONIBLE" : "PEDIR POR WHATSAPP"}
+                  </a>
                 </div>
               </div>
             );

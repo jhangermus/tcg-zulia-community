@@ -41,11 +41,11 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
   return (
     <div className="space-y-10">
       {/* 1. OFFICIAL ZULIA TCG SOCIAL CHANNELS */}
-      <section className="bg-gradient-to-r from-[#001736] via-[#0a0e17] to-[#040914] border border-blue-900/40 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+      <section className="bg-gradient-to-r from-[#001736] via-[#070b14] to-[#04070d] border border-blue-900/60 p-6 md:p-8 shadow-2xl relative overflow-hidden clip-chamfer-tr hud-box hud-bracket-cyan">
         <div className="relative z-10 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <span className="text-[10px] font-black tracking-widest text-yellow-400 uppercase bg-yellow-400/10 border border-yellow-400/20 px-3 py-1 rounded-full">
+              <span className="text-[10px] font-black tracking-widest text-yellow-400 uppercase bg-yellow-400/10 border border-yellow-400/30 px-3 py-1 clip-tag-angled">
                 CANALES OFICIALES
               </span>
               <h2 className="text-2xl md:text-3xl font-black italic tracking-tight text-white mt-2">
@@ -61,7 +61,7 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                 href={socials.whatsapp_group_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-6 py-3 rounded-xl text-xs transition-all tracking-wider shadow-lg shadow-emerald-500/20 hover:scale-105 shrink-0"
+                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-6 py-3 text-xs transition-all tracking-wider clip-btn-tactical shadow-lg shadow-emerald-500/20 hover:scale-105 shrink-0"
               >
                 <FaWhatsapp className="w-4 h-4" /> GRUPO OFICIAL DE WHATSAPP
               </a>
@@ -75,9 +75,9 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                 href={socials.instagram_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 bg-slate-900/80 hover:bg-purple-950/40 border border-slate-800 hover:border-purple-500/50 p-3.5 rounded-xl transition-all group"
+                className="flex items-center gap-3 bg-[#0a0f1d] hover:bg-purple-950/40 border border-slate-800 hover:border-purple-500/50 p-3.5 clip-chamfer-tr transition-all group"
               >
-                <div className="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+                <div className="w-9 h-9 rounded-sm bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
                   <FaInstagram className="w-5 h-5" />
                 </div>
                 <div>
@@ -92,9 +92,9 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                 href={socials.tiktok_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 bg-slate-900/80 hover:bg-pink-950/40 border border-slate-800 hover:border-pink-500/50 p-3.5 rounded-xl transition-all group"
+                className="flex items-center gap-3 bg-[#0a0f1d] hover:bg-pink-950/40 border border-slate-800 hover:border-pink-500/50 p-3.5 clip-chamfer-tr transition-all group"
               >
-                <div className="w-9 h-9 rounded-lg bg-pink-500/10 flex items-center justify-center text-pink-400 group-hover:scale-110 transition-transform">
+                <div className="w-9 h-9 rounded-sm bg-pink-500/10 flex items-center justify-center text-pink-400 group-hover:scale-110 transition-transform">
                   <FaTiktok className="w-5 h-5" />
                 </div>
                 <div>
@@ -109,9 +109,9 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                 href={socials.discord_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 bg-slate-900/80 hover:bg-indigo-950/40 border border-slate-800 hover:border-indigo-500/50 p-3.5 rounded-xl transition-all group"
+                className="flex items-center gap-3 bg-[#0a0f1d] hover:bg-indigo-950/40 border border-slate-800 hover:border-indigo-500/50 p-3.5 clip-chamfer-tr transition-all group"
               >
-                <div className="w-9 h-9 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+                <div className="w-9 h-9 rounded-sm bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
                   <FaDiscord className="w-5 h-5" />
                 </div>
                 <div>
@@ -126,9 +126,9 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                 href={socials.youtube_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 bg-slate-900/80 hover:bg-red-950/40 border border-slate-800 hover:border-red-500/50 p-3.5 rounded-xl transition-all group"
+                className="flex items-center gap-3 bg-[#0a0f1d] hover:bg-red-950/40 border border-slate-800 hover:border-red-500/50 p-3.5 clip-chamfer-tr transition-all group"
               >
-                <div className="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 group-hover:scale-110 transition-transform">
+                <div className="w-9 h-9 rounded-sm bg-red-500/10 flex items-center justify-center text-red-400 group-hover:scale-110 transition-transform">
                   <FaYoutube className="w-5 h-5" />
                 </div>
                 <div>
@@ -147,10 +147,10 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
         <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
           <button
             onClick={() => setActiveTab("stores")}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black transition-all ${
+            className={`flex items-center gap-2 px-6 py-3 text-xs font-black transition-all clip-chamfer-tr ${
               activeTab === "stores"
-                ? "bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/20 scale-105"
-                : "bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800"
+                ? "bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/20"
+                : "bg-[#070b14] hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800"
             }`}
           >
             <Store className="w-4 h-4" /> TIENDAS Y SEDES ({stores.length})
@@ -158,10 +158,10 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
 
           <button
             onClick={() => setActiveTab("groups")}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black transition-all ${
+            className={`flex items-center gap-2 px-6 py-3 text-xs font-black transition-all clip-chamfer-tr ${
               activeTab === "groups"
-                ? "bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/20 scale-105"
-                : "bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800"
+                ? "bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/20"
+                : "bg-[#070b14] hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800"
             }`}
           >
             <FaWhatsapp className="w-4 h-4 text-emerald-400" /> GRUPOS DE WHATSAPP ({groups.length})
@@ -172,7 +172,7 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
         {activeTab === "stores" && (
           <div>
             {stores.length === 0 ? (
-              <div className="bg-[#0a0e17] border border-slate-800 rounded-2xl p-16 text-center text-slate-500 space-y-3">
+              <div className="bg-[#070b14] border border-slate-800 p-16 text-center text-slate-500 space-y-3 clip-chamfer-tr">
                 <Store className="w-16 h-16 mx-auto opacity-20 text-yellow-400" />
                 <h3 className="text-lg font-black text-white">No hay tiendas registradas aún</h3>
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
@@ -184,12 +184,12 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                 {stores.map((store) => (
                   <div
                     key={store.id}
-                    className="bg-[#0a0e17] border border-slate-800 hover:border-yellow-400/40 rounded-2xl p-6 flex flex-col justify-between transition-all duration-200 shadow-xl hover:-translate-y-1 hover:shadow-2xl group"
+                    className="bg-[#070b14] border border-slate-800 hover:border-yellow-400/50 p-6 flex flex-col justify-between transition-all duration-200 shadow-xl hover:-translate-y-1 hover:shadow-2xl group clip-chamfer-tr relative"
                   >
                     <div>
                       {/* Logo and Name */}
                       <div className="flex items-center gap-4 mb-4">
-                        <div className="w-14 h-14 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow">
+                        <div className="w-14 h-14 bg-slate-900 border border-slate-700 rounded-sm flex items-center justify-center overflow-hidden shrink-0 shadow">
                           {store.logoUrl ? (
                             <img src={store.logoUrl} alt={store.name} className="w-full h-full object-cover" />
                           ) : (
@@ -201,7 +201,7 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                           <h3 className="font-black text-white text-lg group-hover:text-yellow-400 transition-colors truncate">
                             {store.name}
                           </h3>
-                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 clip-tag-angled">
                             Sede Oficial
                           </span>
                         </div>
@@ -212,7 +212,7 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                       )}
 
                       {/* Store Details */}
-                      <div className="space-y-2.5 text-xs text-slate-300 bg-slate-900/60 border border-slate-800/80 rounded-xl p-3.5 mb-5">
+                      <div className="space-y-2.5 text-xs text-slate-300 bg-[#0c1220] border border-slate-800 p-3.5 mb-5">
                         <div className="flex items-start gap-2">
                           <MapPin className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
                           <span className="font-medium">{store.location}</span>
@@ -241,7 +241,7 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                           href={`https://wa.me/${store.phone.replace(/[^0-9]/g, "")}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 py-2.5 rounded-xl text-xs font-black transition-all"
+                          className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 py-2.5 text-xs font-black transition-all clip-btn-tactical"
                         >
                           <FaWhatsapp className="w-3.5 h-3.5" /> CONTACTAR
                         </a>
@@ -252,7 +252,7 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                           href={store.instagramUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center justify-center px-4 bg-purple-500/10 hover:bg-purple-600 text-purple-400 hover:text-white border border-purple-500/30 py-2.5 rounded-xl text-xs font-black transition-all"
+                          className="flex items-center justify-center px-4 bg-purple-500/10 hover:bg-purple-600 text-purple-400 hover:text-white border border-purple-500/30 py-2.5 text-xs font-black transition-all clip-btn-tactical"
                           title="Ver Instagram"
                         >
                           <FaInstagram className="w-4 h-4" />
@@ -275,10 +275,10 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                 <button
                   key={filter}
                   onClick={() => setSelectedGroupTcg(filter)}
-                  className={`text-xs font-black px-4 py-2 rounded-lg border transition-all ${
+                  className={`text-xs font-black px-4 py-2 border transition-all clip-chamfer-tr ${
                     selectedGroupTcg === filter
                       ? "bg-emerald-500 text-slate-950 border-emerald-500 shadow-lg shadow-emerald-500/20"
-                      : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                      : "bg-[#070b14] border-slate-800 text-slate-400 hover:text-white"
                   }`}
                 >
                   {filter === "ALL" ? "TODOS LOS GRUPOS" : filter}
@@ -287,7 +287,7 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
             </div>
 
             {filteredGroups.length === 0 ? (
-              <div className="bg-[#0a0e17] border border-slate-800 rounded-2xl p-16 text-center text-slate-500 space-y-3">
+              <div className="bg-[#070b14] border border-slate-800 p-16 text-center text-slate-500 space-y-3 clip-chamfer-tr">
                 <FaWhatsapp className="w-16 h-16 mx-auto opacity-20 text-emerald-400" />
                 <h3 className="text-lg font-black text-white">No hay grupos registrados para este filtro</h3>
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
@@ -299,14 +299,14 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                 {filteredGroups.map((group) => (
                   <div
                     key={group.id}
-                    className="bg-[#0a0e17] border border-slate-800 hover:border-emerald-500/40 rounded-2xl p-6 flex flex-col justify-between transition-all duration-200 shadow-xl hover:-translate-y-1 hover:shadow-2xl group"
+                    className="bg-[#070b14] border border-slate-800 hover:border-emerald-500/40 p-6 flex flex-col justify-between transition-all duration-200 shadow-xl hover:-translate-y-1 hover:shadow-2xl group clip-chamfer-tr relative"
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                        <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-slate-800 text-slate-300 border border-slate-700 clip-tag-angled">
                           {group.tcgName}
                         </span>
-                        <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                        <div className="w-8 h-8 rounded-sm bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
                           <FaWhatsapp className="w-4 h-4" />
                         </div>
                       </div>
@@ -324,7 +324,7 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                       href={group.inviteUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl text-xs transition-all tracking-wider shadow-lg shadow-emerald-500/20 hover:scale-[1.02]"
+                      className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 text-xs transition-all tracking-wider clip-btn-tactical shadow-lg shadow-emerald-500/20 hover:scale-[1.02]"
                     >
                       <FaWhatsapp className="w-4 h-4" /> UNIRSE AL GRUPO
                     </a>

@@ -57,10 +57,10 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setSelectedTcg("ALL")}
-          className={`font-black text-xs px-5 py-2.5 rounded-xl transition-all ${
+          className={`font-black text-xs px-5 py-2.5 transition-all clip-chamfer-tr ${
             selectedTcg === "ALL"
-              ? "bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/20 scale-105"
-              : "bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white"
+              ? "bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/20"
+              : "bg-[#070b14] hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white"
           }`}
         >
           TODOS ({decks.length})
@@ -72,10 +72,10 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
             <button
               key={tcg.id}
               onClick={() => setSelectedTcg(tcg.slug)}
-              className={`font-bold text-xs px-5 py-2.5 rounded-xl border transition-all ${
+              className={`font-bold text-xs px-5 py-2.5 border transition-all clip-chamfer-tr ${
                 isSelected
-                  ? "bg-yellow-400 text-slate-950 border-yellow-400 shadow-lg shadow-yellow-400/20 scale-105 font-black"
-                  : "bg-slate-900/80 hover:bg-slate-800 border-slate-800 text-slate-300 hover:text-white"
+                  ? "bg-yellow-400 text-slate-950 border-yellow-400 shadow-lg shadow-yellow-400/20 font-black"
+                  : "bg-[#070b14] hover:bg-slate-800 border-slate-800 text-slate-300 hover:text-white"
               }`}
             >
               {tcg.name} ({count})
@@ -86,7 +86,7 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
 
       {/* Grid of Decks */}
       {filteredDecks.length === 0 ? (
-        <div className="bg-[#0a0e17] border border-slate-800 rounded-2xl p-16 text-center text-slate-500 space-y-3">
+        <div className="bg-[#070b14] border border-slate-800 p-16 text-center text-slate-500 space-y-3 clip-chamfer-tr">
           <Trophy className="w-16 h-16 mx-auto opacity-20 text-yellow-400" />
           <h3 className="text-lg font-black text-white">No hay Top Decks publicados para este filtro</h3>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
@@ -108,10 +108,10 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
             const badgeInfo = getPlacementBadge(deck.placement);
 
             const themeBorder = isYgo
-              ? "hover:border-red-500/60 border-slate-800"
+              ? "hover:border-red-500/80 border-red-950/60"
               : isOP
-              ? "hover:border-purple-500/60 border-slate-800"
-              : "hover:border-blue-500/60 border-slate-800";
+              ? "hover:border-purple-500/80 border-purple-950/60"
+              : "hover:border-blue-500/80 border-blue-950/60";
 
             const badgeBg = isYgo
               ? "bg-red-500/10 text-red-400 border-red-500/30"
@@ -129,16 +129,16 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
                   setActiveModalDeck(deck);
                   setHoveredCard(deck.deckData.main[0] || deck.deckData.extra[0] || null);
                 }}
-                className={`bg-[#0a0e17] border ${themeBorder} rounded-2xl p-6 flex flex-col justify-between transition-all duration-200 cursor-pointer group shadow-xl hover:shadow-2xl hover:-translate-y-1`}
+                className={`bg-[#070b14] border ${themeBorder} p-6 flex flex-col justify-between transition-all duration-200 cursor-pointer group shadow-xl hover:shadow-2xl hover:-translate-y-1 clip-chamfer-tr relative`}
               >
                 <div>
                   {/* Top Badges */}
                   <div className="flex items-center justify-between gap-2 mb-4">
-                    <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg border ${badgeBg}`}>
+                    <span className={`text-[10px] font-black uppercase px-3 py-1 border clip-tag-angled ${badgeBg}`}>
                       {deck.tcgName}
                     </span>
                     <div className="flex items-center gap-1.5">
-                      <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${badgeInfo.bg} ${badgeInfo.border}`}>
+                      <span className={`text-[10px] font-black px-2.5 py-0.5 border clip-tag-chevron ${badgeInfo.bg} ${badgeInfo.border}`}>
                         {badgeInfo.label}
                       </span>
                     </div>

@@ -26,7 +26,7 @@ export default async function TorneosPage() {
   );
 
   return (
-    <div className="p-6 md:p-8 space-y-8 bg-[#05080f] min-h-screen">
+    <div className="p-6 md:p-8 space-y-8 bg-[#04070d] min-h-screen bg-tactical-grid">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
         <div>
@@ -40,7 +40,7 @@ export default async function TorneosPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/comunidad"
-            className="bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-xs px-6 py-3 rounded-xl transition-all tracking-widest shadow-lg shadow-yellow-400/20"
+            className="bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-xs px-6 py-3 transition-all tracking-widest clip-btn-tactical shadow-lg shadow-yellow-400/20"
           >
             UNIRSE A LA COMUNIDAD
           </Link>
@@ -54,7 +54,7 @@ export default async function TorneosPage() {
         </h2>
 
         {upcomingTournaments.length === 0 ? (
-          <div className="bg-[#0a0e17] border border-slate-800 rounded-2xl p-12 text-center text-slate-500 space-y-2">
+          <div className="bg-[#070b14] border border-slate-800 p-12 text-center text-slate-500 space-y-2 clip-chamfer-tr">
             <Calendar className="w-12 h-12 mx-auto opacity-30 text-yellow-400" />
             <h3 className="text-base font-black text-white">No hay torneos próximos programados</h3>
             <p className="text-xs text-slate-400">Pronto se anunciarán las próximas fechas y sedes de torneos oficiales.</p>
@@ -64,14 +64,14 @@ export default async function TorneosPage() {
             {upcomingTournaments.map((t) => (
               <div
                 key={t.id}
-                className="bg-[#0a0e17] border border-slate-800 rounded-2xl p-6 flex flex-col justify-between hover:border-yellow-400/50 transition-all group relative overflow-hidden shadow-xl"
+                className="bg-[#070b14] border border-slate-800 hover:border-yellow-400/60 p-6 flex flex-col justify-between transition-all group relative shadow-xl clip-chamfer-tr hud-box hud-bracket-cyan"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg bg-slate-800 text-yellow-400 border border-yellow-400/20">
+                    <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-slate-800 text-yellow-400 border border-yellow-400/30 clip-tag-angled">
                       {t.tcg.name}
                     </span>
-                    <span className="text-[10px] font-black text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20">
+                    <span className="text-[9px] font-black text-blue-400 bg-blue-500/10 px-2.5 py-0.5 border border-blue-500/20 clip-tag-chevron">
                       {t.status === "ONGOING" ? "EN CURSO" : "PRÓXIMO"}
                     </span>
                   </div>
@@ -80,7 +80,7 @@ export default async function TorneosPage() {
                     {t.name}
                   </h3>
 
-                  <div className="space-y-2.5 text-xs font-semibold text-slate-300 mb-6">
+                  <div className="space-y-2.5 text-xs font-semibold text-slate-300 mb-6 bg-[#0c1220] p-4 border border-slate-800">
                     <div className="flex items-center gap-2.5 text-slate-200">
                       <Calendar className="w-4 h-4 text-slate-500 flex-shrink-0" />
                       <span>{new Date(t.date).toLocaleDateString("es-VE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>
@@ -108,7 +108,7 @@ export default async function TorneosPage() {
 
                 <Link
                   href="/comunidad"
-                  className="w-full text-center bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black py-3 rounded-xl text-xs transition-colors tracking-widest shadow-lg shadow-yellow-400/20"
+                  className="w-full text-center bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black py-3 text-xs transition-colors tracking-widest clip-btn-tactical shadow-lg shadow-yellow-400/20"
                 >
                   REGISTRARSE AL TORNEO
                 </Link>
@@ -125,7 +125,7 @@ export default async function TorneosPage() {
         </h2>
 
         {pastTournaments.length === 0 ? (
-          <div className="bg-[#0a0e17] border border-slate-800 rounded-2xl p-12 text-center text-slate-500 space-y-2">
+          <div className="bg-[#070b14] border border-slate-800 p-12 text-center text-slate-500 space-y-2 clip-chamfer-tr">
             <Trophy className="w-12 h-12 mx-auto opacity-30 text-yellow-400" />
             <h3 className="text-base font-black text-white">No hay torneos en el historial todavía</h3>
             <p className="text-xs text-slate-400">Los resultados de torneos finalizados se mostrarán aquí con sus mazos ganadores.</p>
@@ -137,11 +137,11 @@ export default async function TorneosPage() {
               const topList = t.decklists.slice(0, 4);
 
               return (
-                <div key={t.id} className="bg-[#0a0e17] border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row gap-6 shadow-xl">
+                <div key={t.id} className="bg-[#070b14] border border-slate-800 p-6 flex flex-col sm:flex-row gap-6 shadow-xl clip-chamfer-tr">
                   {/* Champion Box */}
-                  <div className="w-full sm:w-40 h-40 bg-gradient-to-br from-yellow-400/10 via-slate-900 to-slate-950 rounded-xl flex flex-col items-center justify-center text-center p-3 border border-yellow-400/30 flex-shrink-0">
+                  <div className="w-full sm:w-40 h-40 bg-gradient-to-br from-yellow-400/20 via-[#0c1220] to-[#04070d] flex flex-col items-center justify-center text-center p-3 border border-yellow-400/30 clip-chamfer-tr flex-shrink-0">
                     <Trophy className="w-8 h-8 text-yellow-400 mb-1.5" />
-                    <span className="text-[9px] text-yellow-400/90 font-black uppercase tracking-wider">CAMPEÓN</span>
+                    <span className="text-[9px] text-yellow-400 font-black uppercase tracking-wider">CAMPEÓN</span>
                     <span className="text-sm font-black text-white truncate max-w-full">
                       {champion?.playerName || "—"}
                     </span>
@@ -153,7 +153,7 @@ export default async function TorneosPage() {
                   <div className="flex-grow flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-[9px] font-black uppercase px-2.5 py-0.5 rounded bg-slate-800 text-yellow-400 border border-slate-700">
+                        <span className="text-[9px] font-black uppercase px-2.5 py-0.5 bg-slate-800 text-yellow-400 border border-slate-700 clip-tag-angled">
                           {t.tcg.name}
                         </span>
                         <span className="text-[10px] text-slate-500 font-medium">
@@ -168,7 +168,7 @@ export default async function TorneosPage() {
                           {topList.map((d, i) => (
                             <div key={d.id} className="flex items-center gap-2">
                               <span
-                                className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black ${
+                                className={`w-4 h-4 rounded-sm flex items-center justify-center text-[8px] font-black ${
                                   d.placement === 1
                                     ? "bg-yellow-400 text-slate-950"
                                     : d.placement === 2
@@ -190,7 +190,7 @@ export default async function TorneosPage() {
                     <div className="flex gap-2 mt-4 pt-3 border-t border-slate-800/80">
                       <Link
                         href="/decks"
-                        className="flex-1 text-center bg-yellow-400/10 hover:bg-yellow-400 border border-yellow-400/30 hover:border-yellow-400 text-yellow-400 hover:text-slate-950 font-black text-xs py-2 rounded-xl transition-all tracking-wider"
+                        className="flex-1 text-center bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-xs py-2.5 transition-all tracking-wider clip-btn-tactical"
                       >
                         VER TOP DECKS
                       </Link>
