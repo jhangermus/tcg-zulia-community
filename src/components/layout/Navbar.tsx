@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Bell, Menu, Wrench } from "lucide-react";
 
 const NAV_LINKS = [
   { href: "/", label: "INICIO" },
@@ -13,7 +12,6 @@ const NAV_LINKS = [
   { href: "/tienda", label: "TIENDA" },
   { href: "/comunidad", label: "COMUNIDAD" },
 ];
-
 
 export function Navbar() {
   const pathname = usePathname();
@@ -47,23 +45,8 @@ export function Navbar() {
         </Link>
       </div>
 
-      {/* Right Actions */}
-      <div className="flex items-center space-x-4 sm:space-x-6">
-        <Link
-          href="/admin"
-          className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-yellow-400 transition-colors border border-slate-800 hover:border-yellow-400/40 px-3 py-1.5 rounded-lg"
-          title="Panel Admin"
-        >
-          <Wrench className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">ADMIN</span>
-        </Link>
-        <Link
-          href="/admin/login"
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-black text-xs px-5 py-2 rounded transition-colors tracking-widest"
-        >
-          INICIAR SESIÓN
-        </Link>
-      </div>
+      {/* Right — empty, admin is hidden from public */}
+      <div />
     </nav>
   );
 }
