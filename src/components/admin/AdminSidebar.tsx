@@ -4,20 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Gamepad2, Trophy, Newspaper,
-  ShoppingBag, Users, LogOut, ChevronRight, PenTool
+  ShoppingBag, Users, LogOut, ChevronRight, Layers, Sparkles
 } from "lucide-react";
-import { logout } from "@/lib/actions"; // Keeping this import as it is used in the logout function.
+import { logout } from "@/lib/actions";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/admin/decks", label: "Publicar Tops & Decks", icon: Layers, highlight: true },
   { href: "/admin/tcgs", label: "Juegos (TCGs)", icon: Gamepad2 },
   { href: "/admin/torneos", label: "Torneos", icon: Trophy },
-  { href: "/admin/decks", label: "Deck Builder (Tops)", icon: PenTool },
   { href: "/admin/noticias", label: "Noticias", icon: Newspaper },
   { href: "/admin/tienda", label: "Tienda", icon: ShoppingBag },
   { href: "/admin/comunidad", label: "Comunidad", icon: Users },
 ];
-
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -54,10 +53,12 @@ export function AdminSidebar() {
               className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all group ${
                 active
                   ? "bg-yellow-400/10 text-yellow-400 border border-yellow-400/20"
+                  : item.highlight
+                  ? "text-yellow-400/90 hover:bg-slate-800 hover:text-yellow-300"
                   : "text-slate-400 hover:bg-slate-800 hover:text-white"
               }`}
             >
-              <item.icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-yellow-400" : "text-slate-500 group-hover:text-white"}`} />
+              <item.icon className={`w-5 h-5 flex-shrink-0 ${active || item.highlight ? "text-yellow-400" : "text-slate-500 group-hover:text-white"}`} />
               <span className="flex-grow">{item.label}</span>
               {active && <ChevronRight className="w-4 h-4 text-yellow-400" />}
             </Link>
