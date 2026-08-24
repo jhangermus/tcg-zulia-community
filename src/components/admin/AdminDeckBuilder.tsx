@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   PenTool, Search, Plus, Trash2, Save,
-  Layers, Sparkles, RefreshCw, Check, Shield, Gamepad2, MessageSquare
+  Layers, Sparkles, RefreshCw, Check, Shield, Gamepad2, MessageSquare, Star, Edit3, X, Upload, Image as ImageIcon
 } from "lucide-react";
-import { createDecklist } from "@/lib/actions";
+import { createDecklist, updateDecklist, deleteDecklist } from "@/lib/actions";
 
 interface Card {
   id: string | number;
@@ -15,9 +15,24 @@ interface Card {
   slot?: "main" | "extra" | "side" | "leader" | "egg";
 }
 
+export interface ExistingDeckItem {
+  id: string;
+  playerName: string;
+  deckName: string | null;
+  placement: number;
+  tournamentId: string;
+  tcgId: string;
+  adminNotes?: string | null;
+  coverImageUrl?: string | null;
+  deckData: string;
+  tournament: { name: string };
+  tcg: { name: string; slug: string };
+}
+
 interface AdminDeckBuilderProps {
   tournaments: Array<{ id: string; name: string; tcgId: string }>;
   tcgs: Array<{ id: string; name: string; slug: string }>;
+  existingDecklists?: ExistingDeckItem[];
   initialTournamentId?: string;
   initialTcgId?: string;
 }
@@ -25,6 +40,7 @@ interface AdminDeckBuilderProps {
 export function AdminDeckBuilder({
   tournaments,
   tcgs,
+  existingDecklists = [],
   initialTournamentId,
   initialTcgId,
 }: AdminDeckBuilderProps) {
@@ -55,36 +71,48 @@ export function AdminDeckBuilder({
 
   const [selectedTournamentId, setSelectedTournamentId] = useState(fallbackTournament.id);
 
-  // When TCG changes, update selected tournament if needed
-  useEffect(() => {
-    if (relevantTournaments.length > 0) {
-      if (!relevantTournaments.some((t) => t.id === selectedTournamentId)) {
-        setSelectedTournamentId(relevantTournaments[0].id);
-      }
-    } else if (tournaments.length > 0) {
-      setSelectedTournamentId(tournaments[0].id);
-    }
-  }, [selectedTcgId]);
-
+  // Form states
+  const [editingDeckId, setEditingDeckId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState("");
   const [deckName, setDeckName] = useState("");
   const [placement, setPlacement] = useState(1);
   const [adminNotes, setAdminNotes] = useState("");
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
 
+  // Deck zones
+  const [mainDeck, setMainDeck] = useState<Card[]>([]);
+  const [extraDeck, setExtraDeck] = useState<Card[]>([]);
+  const [sideDeck, setSideDeck] = useState<Card[]>([]);
+
+  // Search & Preview
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Card[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
 
-  const [mainDeck, setMainDeck] = useState<Card[]>([]);
-  const [extraDeck, setExtraDeck] = useState<Card[]>([]);
-  const [sideDeck, setSideDeck] = useState<Card[]>([]);
-
+  // Saving state
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  // Cover image upload from PC ref
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const builderTopRef = useRef<HTMLDivElement>(null);
+
   const extraTitle = isOnePiece ? "LÍDER" : isDigimon ? "DIGI-EGG DECK" : "EXTRA DECK";
   const extraBtn = isOnePiece ? "+ Líder" : isDigimon ? "+ Egg" : "+ Extra";
+
+  // When TCG changes, update selected tournament if needed
+  useEffect(() => {
+    if (!editingDeckId) {
+      if (relevantTournaments.length > 0) {
+        if (!relevantTournaments.some((t) => t.id === selectedTournamentId)) {
+          setSelectedTournamentId(relevantTournaments[0].id);
+        }
+      } else if (tournaments.length > 0) {
+        setSelectedTournamentId(tournaments[0].id);
+      }
+    }
+  }, [selectedTcgId]);
 
   // Perform search
   const performSearch = async (query: string, currentSlug: string) => {
@@ -95,7 +123,7 @@ export function AdminDeckBuilder({
       const data = await res.json();
       if (data.cards && Array.isArray(data.cards)) {
         setSearchResults(data.cards);
-        if (data.cards[0]) {
+        if (data.cards[0] && !selectedCard) {
           setSelectedCard(data.cards[0]);
         }
       } else {
@@ -135,6 +163,11 @@ export function AdminDeckBuilder({
     } else {
       setMainDeck((prev) => [...prev, card]);
     }
+
+    // Auto-set cover image if none chosen yet
+    if (!coverImageUrl && card.image_url) {
+      setCoverImageUrl(card.image_url);
+    }
   };
 
   const removeCard = (index: number, from: "main" | "extra" | "side") => {
@@ -147,7 +180,57 @@ export function AdminDeckBuilder({
     }
   };
 
-  // Submit to Server Action
+  // PC Upload Cover Image
+  const handleCoverFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+      alert("La imagen de portada debe pesar menos de 4MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCoverImageUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Load Deck into Editor
+  const handleStartEditing = (deck: ExistingDeckItem) => {
+    setEditingDeckId(deck.id);
+    setSelectedTcgId(deck.tcgId);
+    setSelectedTournamentId(deck.tournamentId);
+    setPlayerName(deck.playerName);
+    setDeckName(deck.deckName || "");
+    setPlacement(deck.placement);
+    setAdminNotes(deck.adminNotes || "");
+    setCoverImageUrl(deck.coverImageUrl || null);
+
+    try {
+      const parsed = JSON.parse(deck.deckData);
+      setMainDeck(parsed.main || []);
+      setExtraDeck(parsed.extra || []);
+      setSideDeck(parsed.side || []);
+    } catch (e) {
+      console.error("Error parsing deckData for edit:", e);
+    }
+
+    builderTopRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleCancelEditing = () => {
+    setEditingDeckId(null);
+    setPlayerName("");
+    setDeckName("");
+    setPlacement(1);
+    setAdminNotes("");
+    setCoverImageUrl(null);
+    setMainDeck([]);
+    setExtraDeck([]);
+    setSideDeck([]);
+  };
+
+  // Submit to Server Action (Create or Update)
   const handleSaveDeck = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!playerName || !deckName || !selectedTournamentId || !selectedTcgId) {
@@ -160,9 +243,15 @@ export function AdminDeckBuilder({
       return;
     }
 
+    // Default cover image to first card in main or extra if still empty
+    const finalCoverImage = coverImageUrl || mainDeck[0]?.image_url || extraDeck[0]?.image_url || "";
+
     setIsSaving(true);
     try {
       const formData = new FormData();
+      if (editingDeckId) {
+        formData.append("id", editingDeckId);
+      }
       formData.append("playerName", playerName);
       formData.append("deckName", deckName);
       formData.append("placement", placement.toString());
@@ -170,6 +259,9 @@ export function AdminDeckBuilder({
       formData.append("tcgId", selectedTcgId);
       if (adminNotes.trim()) {
         formData.append("adminNotes", adminNotes.trim());
+      }
+      if (finalCoverImage) {
+        formData.append("coverImageUrl", finalCoverImage);
       }
       formData.append(
         "deckData",
@@ -180,17 +272,14 @@ export function AdminDeckBuilder({
         })
       );
 
-      await createDecklist(formData);
-      setSavedSuccess(true);
-      
-      // Clean form for next entry
-      setPlayerName("");
-      setDeckName("");
-      setAdminNotes("");
-      setMainDeck([]);
-      setExtraDeck([]);
-      setSideDeck([]);
+      if (editingDeckId) {
+        await updateDecklist(formData);
+      } else {
+        await createDecklist(formData);
+      }
 
+      setSavedSuccess(true);
+      handleCancelEditing();
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err) {
       console.error("Error saving deck:", err);
@@ -201,8 +290,8 @@ export function AdminDeckBuilder({
   };
 
   return (
-    <div className="space-y-6">
-      {/* TCG SELECTOR TABS (Yu-Gi-Oh! / One Piece / Digimon) */}
+    <div ref={builderTopRef} className="space-y-6">
+      {/* TCG SELECTOR TABS */}
       <div className="bg-[#0a0e17] border border-slate-800 rounded-xl p-4 shadow-xl">
         <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
           <Gamepad2 className="w-4 h-4 text-yellow-400" /> SELECCIONA EL JUEGO / TCG:
@@ -225,7 +314,9 @@ export function AdminDeckBuilder({
               <button
                 key={tcg.id}
                 type="button"
-                onClick={() => setSelectedTcgId(tcg.id)}
+                onClick={() => {
+                  setSelectedTcgId(tcg.id);
+                }}
                 className={`flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl border-2 font-black text-sm transition-all shadow-md ${
                   isSelected
                     ? `${activeStyle} shadow-lg scale-[1.02]`
@@ -240,10 +331,26 @@ export function AdminDeckBuilder({
         </div>
       </div>
 
-      {/* Top Form: Tournament and Player Details */}
-      <div className="bg-[#0a0e17] border border-slate-800 rounded-xl p-6 shadow-xl">
+      {/* Top Form: Tournament, Player, Cover Image Details */}
+      <div className="bg-[#0a0e17] border border-slate-800 rounded-xl p-6 shadow-xl relative">
+        {editingDeckId && (
+          <div className="mb-4 bg-yellow-400/10 border border-yellow-400/30 rounded-xl p-3 flex items-center justify-between">
+            <span className="text-xs font-black text-yellow-400 flex items-center gap-2">
+              <Edit3 className="w-4 h-4" /> EDITANDO DECK EXISTENTE ({deckName || playerName})
+            </span>
+            <button
+              type="button"
+              onClick={handleCancelEditing}
+              className="text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" /> Cancelar Edición
+            </button>
+          </div>
+        )}
+
         <h2 className="font-black text-white text-lg mb-4 flex items-center gap-2">
-          <PenTool className="w-5 h-5 text-yellow-400" /> Cargar Top Deck al Torneo ({activeTcg.name})
+          <PenTool className="w-5 h-5 text-yellow-400" />
+          {editingDeckId ? "Modificar Top Deck" : "Cargar Top Deck al Torneo"} ({activeTcg.name})
         </h2>
 
         <form onSubmit={handleSaveDeck} className="space-y-4">
@@ -319,6 +426,58 @@ export function AdminDeckBuilder({
               />
             </div>
 
+            {/* Cover Image / Ace Monster Selector */}
+            <div className="md:col-span-2 lg:col-span-4 bg-slate-900/60 border border-slate-800 rounded-xl p-3.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-16 rounded-lg bg-slate-950 border border-slate-700 overflow-hidden flex items-center justify-center shrink-0">
+                    {coverImageUrl ? (
+                      <img src={coverImageUrl} alt="Portada" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-5 h-5 text-slate-600" />
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-white flex items-center gap-1.5">
+                      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" /> IMAGEN DE PORTADA / CARTA AS (MINIATURA EN RANKING Y TOPS)
+                    </label>
+                    <p className="text-[11px] text-slate-400">
+                      {coverImageUrl
+                        ? "Portada establecida. Esta imagen aparecerá en los recuadros de Top Decks y como avatar del ranking."
+                        : "Selecciona una carta del buscador y haz clic en 'Poner como Portada' o súbela desde tu PC."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => coverInputRef.current?.click()}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-yellow-400" /> Subir de PC
+                  </button>
+                  {coverImageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setCoverImageUrl(null)}
+                      className="text-xs text-slate-500 hover:text-red-400 p-2"
+                      title="Quitar portada"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                  <input
+                    ref={coverInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverFileChange}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Admin Commentary / Review (Optional) */}
             <div className="md:col-span-2 lg:col-span-4">
               <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider flex items-center gap-1.5">
@@ -350,8 +509,16 @@ export function AdminDeckBuilder({
               disabled={isSaving}
               className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black px-8 py-3 rounded-lg text-xs transition-colors tracking-widest disabled:opacity-50 shadow-lg shadow-yellow-400/20"
             >
-              {savedSuccess ? <Check className="w-4 h-4 text-green-900" /> : <Save className="w-4 h-4" />}
-              {savedSuccess ? "¡TOP DECK PUBLICADO CON ÉXITO!" : isSaving ? "GUARDANDO..." : "PUBLICAR TOP DECK"}
+              {savedSuccess ? (
+                <Check className="w-4 h-4 text-green-900" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              {savedSuccess
+                ? editingDeckId ? "¡DECK ACTUALIZADO!" : "¡TOP DECK PUBLICADO!"
+                : isSaving
+                ? "GUARDANDO..."
+                : editingDeckId ? "ACTUALIZAR TOP DECK" : "PUBLICAR TOP DECK"}
             </button>
           </div>
         </form>
@@ -364,11 +531,16 @@ export function AdminDeckBuilder({
           <h3 className="text-xs font-black text-slate-400 tracking-wider uppercase">VISTA PREVIA</h3>
           {selectedCard ? (
             <div className="space-y-3">
-              <div className="aspect-[3/4] bg-slate-900 rounded-lg overflow-hidden border border-slate-700 flex items-center justify-center">
+              <div className="aspect-[3/4] bg-slate-900 rounded-lg overflow-hidden border border-slate-700 flex items-center justify-center relative">
                 {selectedCard.image_url ? (
                   <img src={selectedCard.image_url} alt={selectedCard.name} className="w-full h-full object-contain" />
                 ) : (
                   <span className="text-slate-600 text-xs">Sin imagen</span>
+                )}
+                {coverImageUrl === selectedCard.image_url && (
+                  <div className="absolute top-2 right-2 bg-yellow-400 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded shadow">
+                    PORTADA
+                  </div>
                 )}
               </div>
               <div>
@@ -376,6 +548,15 @@ export function AdminDeckBuilder({
                 <p className="text-[10px] text-yellow-400 font-bold mt-0.5">{selectedCard.type}</p>
                 <p className="text-[9px] text-slate-500">ID: {selectedCard.id}</p>
               </div>
+
+              {/* Set as Cover Button */}
+              <button
+                type="button"
+                onClick={() => setCoverImageUrl(selectedCard.image_url)}
+                className="w-full flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-yellow-400 hover:text-slate-950 text-yellow-400 border border-yellow-400/30 text-xs font-black py-2 rounded-lg transition-colors"
+              >
+                <Star className="w-3.5 h-3.5" /> Poner como Portada
+              </button>
 
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80">
                 <button
@@ -441,6 +622,9 @@ export function AdminDeckBuilder({
                     className="aspect-[3/4] bg-slate-900 rounded overflow-hidden border border-slate-700 hover:border-red-500 cursor-pointer relative group"
                   >
                     <img src={card.image_url} alt={card.name} className="w-full h-full object-cover" />
+                    {coverImageUrl === card.image_url && (
+                      <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-yellow-400 ring-2 ring-slate-900"></div>
+                    )}
                     <div className="absolute inset-0 bg-red-600/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold text-xs">
                       ✕
                     </div>
@@ -602,6 +786,80 @@ export function AdminDeckBuilder({
             )}
           </div>
         </div>
+      </div>
+
+      {/* List of Existing Saved Decks with Edit & Delete Buttons */}
+      <div className="bg-[#0a0e17] border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+        <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+          <h2 className="font-black text-white text-lg flex items-center gap-2">
+            <Layers className="w-5 h-5 text-yellow-400" /> Tops & Decks Registrados ({existingDecklists.length})
+          </h2>
+        </div>
+
+        {existingDecklists.length === 0 ? (
+          <div className="p-12 text-center text-slate-500 font-bold text-sm">
+            No hay decklists registradas todavía. Usa el constructor de arriba para registrar el primer mazo campeón.
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-800">
+            {existingDecklists.map((deck) => (
+              <div key={deck.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-800/30 transition-colors">
+                {/* Cover Image Thumbnail or Placement */}
+                <div className="w-12 h-16 rounded-lg bg-slate-900 border border-slate-700 overflow-hidden flex items-center justify-center shrink-0 relative">
+                  {deck.coverImageUrl ? (
+                    <img src={deck.coverImageUrl} alt={deck.deckName || "Deck"} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-yellow-400 font-black text-xs">#{deck.placement}</span>
+                  )}
+                  <div className="absolute top-0 right-0 bg-yellow-400 text-slate-950 font-black text-[9px] px-1 rounded-bl">
+                    #{deck.placement}
+                  </div>
+                </div>
+
+                <div className="flex-grow min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-[9px] font-black px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                      {deck.tcg.name}
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-medium">{deck.tournament.name}</span>
+                  </div>
+                  <p className="font-black text-white text-sm">{deck.deckName}</p>
+                  <p className="text-xs text-slate-400 font-medium">Piloto: {deck.playerName}</p>
+                  {deck.adminNotes && (
+                    <p className="text-[11px] text-yellow-400/80 font-medium mt-1 flex items-center gap-1 line-clamp-1">
+                      <MessageSquare className="w-3 h-3 shrink-0" /> {deck.adminNotes}
+                    </p>
+                  )}
+                </div>
+
+                {/* Edit & Delete Actions */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleStartEditing(deck)}
+                    className="flex items-center gap-1.5 bg-yellow-400/10 hover:bg-yellow-400 text-yellow-400 hover:text-slate-950 border border-yellow-400/30 px-3 py-2 rounded-lg text-xs font-black transition-all"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" /> Editar
+                  </button>
+
+                  <form
+                    action={async () => {
+                      await deleteDecklist(deck.id);
+                    }}
+                  >
+                    <button
+                      type="submit"
+                      className="text-slate-600 hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-red-400/10"
+                      title="Eliminar Deck"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -203,6 +203,7 @@ const DecklistSchema = z.object({
   tcgId: z.string().min(1, "Selecciona un TCG"),
   deckData: z.string().min(2),
   adminNotes: z.string().optional(),
+  coverImageUrl: z.string().optional(),
 });
 
 export async function createDecklist(formData: FormData) {
@@ -215,6 +216,7 @@ export async function createDecklist(formData: FormData) {
     tcgId: formData.get("tcgId"),
     deckData: formData.get("deckData"),
     adminNotes: formData.get("adminNotes") ? String(formData.get("adminNotes")) : undefined,
+    coverImageUrl: formData.get("coverImageUrl") ? String(formData.get("coverImageUrl")) : undefined,
   });
 
   if (!validated.success) {
@@ -226,6 +228,41 @@ export async function createDecklist(formData: FormData) {
   revalidatePath("/admin/torneos");
   revalidatePath("/decks");
   revalidatePath("/torneos");
+  revalidatePath("/ranking");
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function updateDecklist(formData: FormData) {
+  await requireAdmin();
+  const id = formData.get("id") as string;
+  if (!id) return { error: "ID no proporcionado" };
+
+  const validated = DecklistSchema.safeParse({
+    playerName: formData.get("playerName"),
+    deckName: formData.get("deckName"),
+    placement: formData.get("placement"),
+    tournamentId: formData.get("tournamentId"),
+    tcgId: formData.get("tcgId"),
+    deckData: formData.get("deckData"),
+    adminNotes: formData.get("adminNotes") ? String(formData.get("adminNotes")) : undefined,
+    coverImageUrl: formData.get("coverImageUrl") ? String(formData.get("coverImageUrl")) : undefined,
+  });
+
+  if (!validated.success) {
+    return { error: "Datos inválidos" };
+  }
+
+  await prisma.decklist.update({
+    where: { id },
+    data: validated.data,
+  });
+
+  revalidatePath("/admin/decks");
+  revalidatePath("/admin/torneos");
+  revalidatePath("/decks");
+  revalidatePath("/torneos");
+  revalidatePath("/ranking");
   revalidatePath("/");
   return { success: true };
 }
@@ -235,6 +272,8 @@ export async function deleteDecklist(id: string) {
   await prisma.decklist.delete({ where: { id } });
   revalidatePath("/admin/decks");
   revalidatePath("/decks");
+  revalidatePath("/ranking");
+  revalidatePath("/");
 }
 
 // --- LOCAL STORE / PARTNERS ACTIONS ---

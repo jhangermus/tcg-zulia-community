@@ -1,4 +1,4 @@
-import { Crown, Flame } from "lucide-react";
+import { Crown, Flame, Trophy, Award } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
@@ -9,30 +9,40 @@ const POINTS: Record<number, number> = { 1: 100, 2: 75, 3: 50, 4: 50 };
 export default async function RankingPage() {
   const decklists = await prisma.decklist.findMany({
     include: { tcg: true },
+    orderBy: { createdAt: "desc" },
   });
 
+  // Build ranking from decklists with player cover avatars
+  const playerMap: Record<
+    string,
+    { pts: number; tops: number; mainTcg: string; coverUrl?: string | null }
+  > = {};
 
-  // Build ranking from decklists
-  const playerMap: Record<string, { pts: number; tops: number; mainTcg: string }> = {};
   for (const d of decklists) {
     const pts = POINTS[d.placement] ?? (d.placement <= 8 ? 25 : 0);
     if (!playerMap[d.playerName]) {
-      playerMap[d.playerName] = { pts: 0, tops: 0, mainTcg: d.tcg.name };
+      let cover = d.coverImageUrl;
+      if (!cover) {
+        try {
+          const parsed = JSON.parse(d.deckData);
+          cover = parsed.main?.[0]?.image_url || parsed.extra?.[0]?.image_url;
+        } catch (e) {}
+      }
+      playerMap[d.playerName] = {
+        pts: 0,
+        tops: 0,
+        mainTcg: d.tcg.name,
+        coverUrl: cover,
+      };
     }
     playerMap[d.playerName].pts += pts;
     playerMap[d.playerName].tops += 1;
   }
 
   const ranking = Object.entries(playerMap)
-    .map(([name, data], i) => ({ rank: i + 1, name, ...data }))
+    .map(([name, data]) => ({ name, ...data }))
     .sort((a, b) => b.pts - a.pts)
     .map((p, i) => ({ ...p, rank: i + 1 }));
-
-  const top3Colors = [
-    "text-yellow-400 border-yellow-400/40 bg-yellow-400/10",
-    "text-slate-300 border-slate-400/40 bg-slate-400/10",
-    "text-amber-600 border-amber-600/40 bg-amber-600/10",
-  ];
 
   return (
     <div className="p-6 md:p-8 space-y-8 bg-[#05080f] min-h-screen">
@@ -46,16 +56,18 @@ export default async function RankingPage() {
             Tabla de clasificación general de la comunidad de TCG en el Estado Zulia (Temporada activa).
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-lg text-xs font-bold text-slate-300">
+        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-xs font-bold text-slate-300">
           <Flame className="w-4 h-4 text-orange-500" /> TEMPORADA ACTIVA
         </div>
       </div>
 
       {ranking.length === 0 ? (
         <div className="text-center py-20 text-slate-500">
-          <Crown className="w-16 h-16 mx-auto mb-4 opacity-20" />
-          <p className="font-bold text-lg">El ranking se construirá automáticamente</p>
-          <p className="text-sm mt-2">cuando los admins carguen los resultados de los torneos desde el Panel de Admin.</p>
+          <Crown className="w-16 h-16 mx-auto mb-4 opacity-20 text-yellow-400" />
+          <p className="font-bold text-lg text-white">El ranking se construirá automáticamente</p>
+          <p className="text-xs text-slate-400 mt-1">
+            Cada vez que se registre un top deck en los torneos oficiales se sumarán puntos para la tabla.
+          </p>
         </div>
       ) : (
         <>
@@ -63,49 +75,70 @@ export default async function RankingPage() {
           {ranking.length >= 1 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
               {/* 2nd Place */}
-              <div className="order-2 md:order-1 bg-[#0a0e17] border border-slate-700/60 rounded-xl p-6 flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full bg-slate-800 border-2 border-slate-400 flex items-center justify-center font-black text-2xl text-slate-300 mb-3 shadow-lg">
-                  2
+              <div className="order-2 md:order-1 bg-[#0a0e17] border border-slate-700/60 rounded-2xl p-6 flex flex-col items-center text-center shadow-xl">
+                <div className="w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-400 overflow-hidden flex items-center justify-center font-black text-2xl text-slate-300 mb-3 shadow-lg relative">
+                  {ranking[1]?.coverUrl ? (
+                    <img src={ranking[1].coverUrl} alt="2nd" className="w-full h-full object-cover" />
+                  ) : (
+                    <span>2</span>
+                  )}
+                  <div className="absolute bottom-0 inset-x-0 bg-slate-900/90 text-[10px] font-black text-slate-300 py-0.5">
+                    #2
+                  </div>
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">SUB-CAMPEÓN</span>
                 <h3 className="text-2xl font-black text-white mt-1">{ranking[1]?.name ?? "—"}</h3>
                 <p className="text-xs font-bold text-slate-400 mb-4">{ranking[1]?.mainTcg ?? ""}</p>
                 {ranking[1] && (
-                  <div className="w-full bg-slate-900/80 rounded-lg p-3 border border-slate-800 grid grid-cols-2 gap-2 text-center text-xs">
-                    <div><p className="text-slate-500 font-bold text-[9px]">PUNTOS</p><p className="font-black text-white text-sm">{ranking[1].pts}</p></div>
-                    <div><p className="text-slate-500 font-bold text-[9px]">TOPS</p><p className="font-black text-white text-sm">{ranking[1].tops}</p></div>
+                  <div className="w-full bg-slate-900/80 rounded-xl p-3 border border-slate-800 grid grid-cols-2 gap-2 text-center text-xs">
+                    <div><p className="text-slate-500 font-bold text-[9px]">PUNTOS</p><p className="font-black text-white text-base">{ranking[1].pts}</p></div>
+                    <div><p className="text-slate-500 font-bold text-[9px]">TOPS</p><p className="font-black text-white text-base">{ranking[1].tops}</p></div>
                   </div>
                 )}
               </div>
 
               {/* 1st Place */}
-              <div className="order-1 md:order-2 bg-gradient-to-b from-yellow-400/15 via-[#0a0e17] to-[#0a0e17] border-2 border-yellow-400/60 rounded-xl p-6 flex flex-col items-center text-center shadow-2xl scale-105">
-                <div className="w-20 h-20 rounded-full bg-yellow-400 border-4 border-[#0a0e17] flex items-center justify-center font-black text-3xl text-slate-950 mb-3 shadow-yellow-400/30 shadow-lg">
-                  <Crown className="w-10 h-10 text-slate-950" />
+              <div className="order-1 md:order-2 bg-gradient-to-b from-yellow-400/15 via-[#0a0e17] to-[#0a0e17] border-2 border-yellow-400/60 rounded-2xl p-6 flex flex-col items-center text-center shadow-2xl scale-105">
+                <div className="w-24 h-24 rounded-full bg-yellow-400 border-4 border-[#0a0e17] overflow-hidden flex items-center justify-center font-black text-3xl text-slate-950 mb-3 shadow-yellow-400/30 shadow-lg relative">
+                  {ranking[0]?.coverUrl ? (
+                    <img src={ranking[0].coverUrl} alt="1st" className="w-full h-full object-cover" />
+                  ) : (
+                    <Crown className="w-10 h-10 text-slate-950" />
+                  )}
+                  <div className="absolute bottom-0 inset-x-0 bg-yellow-400 text-[10px] font-black text-slate-950 py-0.5">
+                    #1
+                  </div>
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-wider text-yellow-400 bg-yellow-400/10 border border-yellow-400/30 px-3 py-0.5 rounded-full">
                   NÚMERO 1 DEL ZULIA
                 </span>
                 <h3 className="text-3xl font-black text-white mt-2">{ranking[0].name}</h3>
                 <p className="text-xs font-bold text-yellow-400 mb-4">{ranking[0].mainTcg}</p>
-                <div className="w-full bg-slate-900/90 rounded-lg p-3 border border-yellow-400/30 grid grid-cols-2 gap-2 text-center text-xs">
-                  <div><p className="text-slate-400 font-bold text-[9px]">PUNTOS</p><p className="font-black text-yellow-400 text-base">{ranking[0].pts}</p></div>
-                  <div><p className="text-slate-400 font-bold text-[9px]">TOPS</p><p className="font-black text-white text-base">{ranking[0].tops}</p></div>
+                <div className="w-full bg-slate-900/90 rounded-xl p-3 border border-yellow-400/30 grid grid-cols-2 gap-2 text-center text-xs">
+                  <div><p className="text-slate-400 font-bold text-[9px]">PUNTOS</p><p className="font-black text-yellow-400 text-lg">{ranking[0].pts}</p></div>
+                  <div><p className="text-slate-400 font-bold text-[9px]">TOPS</p><p className="font-black text-white text-lg">{ranking[0].tops}</p></div>
                 </div>
               </div>
 
               {/* 3rd Place */}
-              <div className="order-3 bg-[#0a0e17] border border-amber-800/40 rounded-xl p-6 flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full bg-amber-950 border-2 border-amber-600 flex items-center justify-center font-black text-2xl text-amber-500 mb-3 shadow-lg">
-                  3
+              <div className="order-3 bg-[#0a0e17] border border-amber-800/40 rounded-2xl p-6 flex flex-col items-center text-center shadow-xl">
+                <div className="w-20 h-20 rounded-full bg-amber-950 border-2 border-amber-600 overflow-hidden flex items-center justify-center font-black text-2xl text-amber-500 mb-3 shadow-lg relative">
+                  {ranking[2]?.coverUrl ? (
+                    <img src={ranking[2].coverUrl} alt="3rd" className="w-full h-full object-cover" />
+                  ) : (
+                    <span>3</span>
+                  )}
+                  <div className="absolute bottom-0 inset-x-0 bg-slate-900/90 text-[10px] font-black text-amber-500 py-0.5">
+                    #3
+                  </div>
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-wider text-amber-500">TERCER LUGAR</span>
                 <h3 className="text-2xl font-black text-white mt-1">{ranking[2]?.name ?? "—"}</h3>
                 <p className="text-xs font-bold text-slate-400 mb-4">{ranking[2]?.mainTcg ?? ""}</p>
                 {ranking[2] && (
-                  <div className="w-full bg-slate-900/80 rounded-lg p-3 border border-slate-800 grid grid-cols-2 gap-2 text-center text-xs">
-                    <div><p className="text-slate-500 font-bold text-[9px]">PUNTOS</p><p className="font-black text-white text-sm">{ranking[2].pts}</p></div>
-                    <div><p className="text-slate-500 font-bold text-[9px]">TOPS</p><p className="font-black text-white text-sm">{ranking[2].tops}</p></div>
+                  <div className="w-full bg-slate-900/80 rounded-xl p-3 border border-slate-800 grid grid-cols-2 gap-2 text-center text-xs">
+                    <div><p className="text-slate-500 font-bold text-[9px]">PUNTOS</p><p className="font-black text-white text-base">{ranking[2].pts}</p></div>
+                    <div><p className="text-slate-500 font-bold text-[9px]">TOPS</p><p className="font-black text-white text-base">{ranking[2].tops}</p></div>
                   </div>
                 )}
               </div>
@@ -113,10 +146,10 @@ export default async function RankingPage() {
           )}
 
           {/* Full Leaderboard Table */}
-          <div className="bg-[#0a0e17] border border-slate-800 rounded-xl overflow-hidden">
+          <div className="bg-[#0a0e17] border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             <div className="p-6 border-b border-slate-800 flex justify-between items-center">
               <h2 className="font-black text-white text-lg">Tabla General de Clasificación</h2>
-              <span className="text-xs text-slate-500 font-bold">Actualizado automáticamente</span>
+              <span className="text-xs text-slate-500 font-bold">Actualizado en tiempo real</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
@@ -143,7 +176,20 @@ export default async function RankingPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="font-black text-white text-sm">{player.name}</p>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center shrink-0">
+                            {player.coverUrl ? (
+                              <img src={player.coverUrl} alt={player.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] font-black text-yellow-400 uppercase">
+                                {player.name.substring(0, 2)}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-black text-white text-sm">{player.name}</p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-xs font-bold text-slate-300">{player.mainTcg}</span>

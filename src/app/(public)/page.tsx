@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Calendar, MapPin, Trophy, Users } from "lucide-react";
+import { Calendar, MapPin, Trophy, Users, Award, Clock } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -36,230 +36,297 @@ export default async function Home() {
       year: "numeric",
     }).toUpperCase();
 
+  // Helper to extract cover image from deck
+  const getDeckCover = (deck: { coverImageUrl?: string | null; deckData: string }) => {
+    if (deck.coverImageUrl) return deck.coverImageUrl;
+    try {
+      const parsed = JSON.parse(deck.deckData);
+      if (parsed.main && parsed.main[0]?.image_url) return parsed.main[0].image_url;
+      if (parsed.extra && parsed.extra[0]?.image_url) return parsed.extra[0].image_url;
+    } catch (e) {}
+    return null;
+  };
+
   return (
     <div className="p-6 space-y-6 bg-[#05080f] min-h-screen">
       {/* ROW 1: Hero & Next Tournament */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Hero */}
-        <div className="xl:col-span-2 relative rounded-xl overflow-hidden bg-gradient-to-r from-[#001736] to-[#040914] border border-slate-800 p-8 flex flex-col justify-between min-h-[350px]">
+        <div className="xl:col-span-2 relative rounded-2xl overflow-hidden bg-gradient-to-r from-[#001736] via-[#0a0e17] to-[#040914] border border-blue-900/40 p-8 flex flex-col justify-between min-h-[350px] shadow-2xl">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-          <div className="relative z-10 w-full md:w-1/2">
-            <h2 className="text-xl italic font-bold text-white mb-2">BIENVENIDO A</h2>
-            <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter text-white mb-1 drop-shadow-lg">
+          <div className="relative z-10 w-full md:w-2/3">
+            <span className="text-[10px] font-black tracking-widest text-yellow-400 uppercase bg-yellow-400/10 border border-yellow-400/20 px-3 py-1 rounded-full">
+              COMUNIDAD OFICIAL DEL ZULIA
+            </span>
+            <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter text-white mt-3 mb-2 drop-shadow-lg">
               ZULIA <span className="text-yellow-400">TCG</span>
             </h1>
-            <p className="text-sm font-bold text-slate-300 tracking-widest mb-8">TORNEOS • DECKLISTS • RANKING • COMUNIDAD</p>
-            <Link href="/torneos" className="inline-block bg-transparent border-2 border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white font-bold text-sm px-6 py-2 rounded transition-colors tracking-widest">
-              VER PRÓXIMO TORNEO
-            </Link>
-          </div>
-          <div className="absolute right-0 top-0 h-full w-1/2 hidden md:flex items-center justify-end pr-8">
-            <div className="w-64 h-80 bg-slate-800/50 rounded shadow-2xl border border-slate-700 transform rotate-12 flex items-center justify-center">
-              <span className="text-slate-500 font-bold">TCG Cards</span>
+            <p className="text-xs font-bold text-slate-300 tracking-widest mb-8 uppercase">
+              TORNEOS • TOP DECKS • RANKING • COMUNIDAD MARACAIBO
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/torneos"
+                className="bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-xs px-6 py-3 rounded-xl transition-all tracking-widest shadow-lg shadow-yellow-400/20"
+              >
+                VER PRÓXIMOS TORNEOS
+              </Link>
+              <Link
+                href="/decks"
+                className="bg-slate-900 hover:bg-slate-800 text-white font-black text-xs px-6 py-3 rounded-xl border border-slate-700 transition-colors tracking-widest"
+              >
+                EXPLORAR TOP DECKS
+              </Link>
             </div>
           </div>
         </div>
 
-        {/* Proximo Torneo */}
-        <div className="bg-[#0a0e17] rounded-xl border border-slate-800 p-6 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-sm font-bold text-slate-300 tracking-wider">PRÓXIMO TORNEO</h3>
+        {/* Next Tournament Card */}
+        <div className="bg-[#0a0e17] rounded-2xl border border-slate-800 p-6 flex flex-col justify-between relative shadow-xl">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-[10px] font-black tracking-wider text-yellow-400 uppercase">PRÓXIMO EVENTO</span>
+            {nextTournament && (
+              <span className="text-[10px] font-bold px-2 py-0.5 bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 rounded uppercase">
+                {nextTournament.tcg.name}
+              </span>
+            )}
           </div>
+
           {nextTournament ? (
-            <>
-              <div className="flex-grow flex flex-col justify-center items-center text-center mb-6">
-                <h2 className="text-4xl font-black italic text-white drop-shadow-md">{nextTournament.name}</h2>
-                <span className="font-bold mt-2 text-sm" style={{ color: nextTournament.tcg.color ?? "#ffffff" }}>
-                  {nextTournament.tcg.name.toUpperCase()}
-                </span>
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-2xl font-black italic text-white line-clamp-2">{nextTournament.name}</h3>
+                <p className="text-xs text-yellow-400 font-bold mt-1">Premio: {nextTournament.prize || "Por definir"}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4 text-xs font-semibold text-slate-300 mb-6">
-                <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-slate-500" />{formatDate(nextTournament.date)}</div>
-                <div className="flex items-center gap-2"><span>🕒</span>
-                  {new Date(nextTournament.date).toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" })}
+
+              <div className="space-y-2 text-xs font-semibold text-slate-300 bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-slate-500 shrink-0" />
+                  <span>{formatDate(nextTournament.date)}</span>
                 </div>
-                <div className="flex items-center gap-2"><MapPin className="w-4 h-4 text-slate-500" />{nextTournament.location}</div>
-                {nextTournament.participantsCount && (
-                  <div className="flex items-center gap-2"><Users className="w-4 h-4 text-slate-500" />{nextTournament.participantsCount} JUG.</div>
-                )}
-                {nextTournament.prize && (
-                  <div className="col-span-2 flex items-center gap-2"><Trophy className="w-4 h-4 text-yellow-500" />PREMIO: {nextTournament.prize}</div>
-                )}
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-slate-500 shrink-0" />
+                  <span>{nextTournament.location || "Maracaibo, Zulia"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-slate-500 shrink-0" />
+                  <span>Cupo: {nextTournament.participantsCount > 0 ? `${nextTournament.participantsCount} duelistas` : "Abierto"}</span>
+                </div>
               </div>
-            </>
+            </div>
           ) : (
-            <div className="flex-grow flex flex-col items-center justify-center text-center text-slate-500">
-              <Trophy className="w-12 h-12 mb-3 opacity-30" />
-              <p className="font-bold text-sm">No hay torneos próximos</p>
-              <p className="text-xs mt-1">Pronto se anunciará el siguiente</p>
+            <div className="flex-grow flex flex-col items-center justify-center text-center text-slate-500 py-6">
+              <Trophy className="w-12 h-12 mb-3 opacity-30 text-yellow-400" />
+              <p className="font-bold text-sm text-slate-300">No hay torneos próximos programados</p>
+              <p className="text-xs text-slate-500 mt-1">Pronto se anunciarán nuevas fechas oficiales.</p>
             </div>
           )}
-          <Link href="/torneos" className="w-full text-center bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 rounded text-sm transition-colors tracking-widest mt-auto">
-            VER DETALLES
+
+          <Link
+            href="/torneos"
+            className="w-full text-center bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black py-3 rounded-xl text-xs transition-colors tracking-widest mt-6 shadow-lg shadow-yellow-400/20"
+          >
+            VER CALENDARIO
           </Link>
         </div>
       </div>
 
-      {/* ROW 2: Ultimos Torneos, Top Decks, Ranking */}
+      {/* ROW 2: Ultimos Torneos, Top Decks (Cover Images), Ranking (Player Avatars) */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         {/* Ultimos Torneos */}
-        <div className="xl:col-span-4 bg-[#0a0e17] rounded-xl border border-slate-800 p-6">
-          <h3 className="text-sm font-bold text-slate-300 tracking-wider mb-4">ÚLTIMO TORNEO</h3>
-          {recentTournament ? (
-            <div className="flex gap-4">
-              <div className="w-32 h-40 bg-slate-800 rounded flex items-center justify-center text-center p-2 relative overflow-hidden shrink-0">
-                <span className="relative z-10 text-yellow-400 font-black italic text-sm">
-                  CAMPEÓN<br />
-                  {recentTournament.decklists[0]?.playerName?.toUpperCase() ?? "—"}
-                </span>
-              </div>
-              <div className="flex-1 flex flex-col justify-center">
-                <h4 className="font-bold text-lg text-white">{recentTournament.name}</h4>
-                <p className="text-[10px] text-slate-500 mb-3">
-                  {formatDate(recentTournament.date)} • {recentTournament.participantsCount ?? "—"} JUGADORES
-                </p>
-                <div className="space-y-1 text-xs font-semibold text-slate-300">
+        <div className="xl:col-span-4 bg-[#0a0e17] rounded-2xl border border-slate-800 p-6 flex flex-col justify-between shadow-xl">
+          <div>
+            <h3 className="text-xs font-black text-slate-400 tracking-wider uppercase mb-4 flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-yellow-400" /> ÚLTIMO TORNEO FINALIZADO
+            </h3>
+            {recentTournament ? (
+              <div className="space-y-4">
+                <div className="flex gap-4 items-center">
+                  <div className="w-24 h-28 bg-gradient-to-br from-yellow-400/20 to-slate-900 border border-yellow-400/30 rounded-xl flex flex-col items-center justify-center text-center p-2 shrink-0">
+                    <Trophy className="w-6 h-6 text-yellow-400 mb-1" />
+                    <span className="text-[8px] text-yellow-400/90 font-black uppercase">CAMPEÓN</span>
+                    <span className="text-xs font-black text-white truncate max-w-full">
+                      {recentTournament.decklists[0]?.playerName?.toUpperCase() ?? "—"}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[9px] font-black px-2 py-0.5 rounded bg-slate-800 text-yellow-400 uppercase">
+                      {recentTournament.tcg.name}
+                    </span>
+                    <h4 className="font-black text-base text-white mt-1 truncate">{recentTournament.name}</h4>
+                    <p className="text-[10px] text-slate-400">{formatDate(recentTournament.date)}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 text-xs font-semibold text-slate-300 bg-slate-900/50 p-3 rounded-xl border border-slate-800">
                   {recentTournament.decklists.slice(0, 4).map((d, i) => (
-                    <div key={d.id} className="flex items-center gap-2">
-                      <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold
-                        ${i === 0 ? "bg-yellow-500 text-black" : i === 1 ? "bg-slate-400 text-black" : i === 2 ? "bg-orange-700 text-white" : "bg-slate-700 text-white"}`}>
-                        {i + 1}
-                      </span>
-                      {d.playerName}
+                    <div key={d.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 truncate">
+                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black ${
+                          i === 0 ? "bg-yellow-400 text-slate-950" : i === 1 ? "bg-slate-300 text-slate-950" : "bg-amber-600 text-white"
+                        }`}>
+                          {i + 1}
+                        </span>
+                        <span className="truncate">{d.playerName}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-bold truncate max-w-[120px]">{d.deckName || "Deck"}</span>
                     </div>
                   ))}
                   {recentTournament.decklists.length === 0 && (
-                    <p className="text-slate-600 text-xs">Sin resultados cargados</p>
+                    <p className="text-slate-500 text-xs text-center py-1">Sin tops cargados aún</p>
                   )}
                 </div>
-                <div className="flex gap-2 mt-4">
-                  <Link href="/torneos" className="flex-1 text-center border border-blue-500 text-blue-400 text-[10px] font-bold py-1.5 rounded hover:bg-blue-500 hover:text-white transition-colors">VER RESULTADOS</Link>
-                  <Link href="/decks" className="flex-1 text-center border border-slate-600 text-slate-300 text-[10px] font-bold py-1.5 rounded hover:bg-slate-600 transition-colors">VER TOP DECKS</Link>
-                </div>
               </div>
-            </div>
-          ) : (
-            <p className="text-slate-500 text-sm text-center py-8">Sin torneos completados aún</p>
-          )}
-        </div>
-
-        {/* Top Decks */}
-        <div className="xl:col-span-5 bg-[#0a0e17] rounded-xl border border-slate-800 p-6">
-          <h3 className="text-sm font-bold text-slate-300 tracking-wider mb-4">TOP DECKS</h3>
-          {topDecks.length > 0 ? (
-            <div className="grid grid-cols-3 gap-4">
-              {topDecks.map((deck, i) => (
-                <div key={deck.id} className="flex flex-col items-center">
-                  <div className="w-full aspect-[3/4] bg-slate-800 rounded border border-slate-700 mb-2 relative">
-                    <div className={`absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs border-2 border-[#0a0e17]
-                      ${i === 0 ? "bg-yellow-500 text-black" : i === 1 ? "bg-slate-400 text-black" : "bg-orange-700 text-white"}`}>
-                      {i + 1}
-                    </div>
-                  </div>
-                  <span className="font-bold text-xs text-white uppercase text-center leading-tight">{deck.deckName ?? "—"}</span>
-                  <span className="text-[10px] font-bold mb-1" style={{ color: deck.tcg.color ?? "#ffffff" }}>{deck.tcg.name.toUpperCase()}</span>
-
-                  <span className="text-[9px] text-slate-500">TOP {deck.placement}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-slate-500 text-sm text-center py-8">Sin decks cargados aún</p>
-          )}
-        </div>
-
-        {/* Ranking Preview */}
-        <div className="xl:col-span-3 bg-[#0a0e17] rounded-xl border border-slate-800 p-6 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-sm font-bold text-slate-300 tracking-wider">RANKING</h3>
-            <Link href="/ranking" className="text-[10px] text-blue-400 font-bold hover:text-blue-300">VER RANKING</Link>
+            ) : (
+              <p className="text-slate-500 text-xs text-center py-8">Sin torneos completados aún</p>
+            )}
           </div>
-          <RankingPreview />
-        </div>
-      </div>
 
-      {/* ROW 3: Noticias y Tienda */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        <div className="xl:col-span-3 bg-[#0a0e17] rounded-xl border border-slate-800 p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-sm font-bold text-slate-300 tracking-wider">NOTICIAS Y ACTUALIDAD</h3>
-            <Link href="/noticias" className="text-[10px] text-blue-400 font-bold hover:text-blue-300">VER TODAS</Link>
-          </div>
-          {news.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {news.map((n) => {
-                const tagColor = n.tag === "RESULTADOS" ? "bg-purple-600" : n.tag === "DECK PROFILE" ? "bg-blue-600" : "bg-green-600";
-                return (
-                  <div key={n.id} className="bg-slate-900 rounded-lg overflow-hidden border border-slate-800">
-                    <div className="h-24 bg-slate-800 relative">
-                      <span className={`absolute top-2 left-2 ${tagColor} text-[8px] font-bold px-2 py-0.5 rounded text-white`}>{n.tag}</span>
-                    </div>
-                    <div className="p-3">
-                      <h4 className="font-bold text-sm text-white mb-1 line-clamp-1">{n.title}</h4>
-                      <p className="text-[10px] text-slate-400 mb-2 line-clamp-2">{n.content}</p>
-                      <span className="text-[9px] text-slate-500">
-                        {new Date(n.createdAt).toLocaleDateString("es-VE")}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-slate-500 text-sm text-center py-8">Sin noticias publicadas aún</p>
-          )}
-        </div>
-        <div className="bg-gradient-to-br from-[#001736] to-black rounded-xl border border-blue-900/50 p-6 flex flex-col justify-center items-start relative overflow-hidden">
-          <div className="relative z-10">
-            <h2 className="text-3xl font-black italic text-yellow-400 leading-tight mb-2">VISITA NUESTRA<br /><span className="text-white">TIENDA</span></h2>
-            <p className="text-[10px] font-semibold text-slate-300 w-2/3 mb-6">PLAYMATS, SLEEVES, ACCESORIOS Y MUCHO MÁS</p>
-            <Link href="/tienda" className="inline-block bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-6 rounded text-sm transition-colors tracking-widest">
-              IR A LA TIENDA
+          <div className="flex gap-2 mt-4 pt-3 border-t border-slate-800">
+            <Link href="/torneos" className="flex-1 text-center bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white text-xs font-black py-2 rounded-xl transition-colors">
+              RESULTADOS
+            </Link>
+            <Link href="/decks" className="flex-1 text-center bg-yellow-400 hover:bg-yellow-500 text-slate-950 text-xs font-black py-2 rounded-xl transition-colors">
+              TOP DECKS
             </Link>
           </div>
-          <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-slate-800 opacity-50 transform rotate-12 rounded"></div>
-          <div className="absolute right-4 top-4 w-16 h-24 bg-slate-800 opacity-50 transform -rotate-12 rounded"></div>
+        </div>
+
+        {/* Top Decks with COVER IMAGES */}
+        <div className="xl:col-span-5 bg-[#0a0e17] rounded-2xl border border-slate-800 p-6 flex flex-col justify-between shadow-xl">
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xs font-black text-slate-400 tracking-wider uppercase flex items-center gap-2">
+                <Award className="w-4 h-4 text-yellow-400" /> TOP DECKS CAMPEONES
+              </h3>
+              <Link href="/decks" className="text-[11px] text-yellow-400 font-black hover:underline">
+                VER TODOS →
+              </Link>
+            </div>
+
+            {topDecks.length > 0 ? (
+              <div className="grid grid-cols-3 gap-3">
+                {topDecks.map((deck, i) => {
+                  const cover = getDeckCover(deck);
+                  return (
+                    <Link
+                      key={deck.id}
+                      href="/decks"
+                      className="flex flex-col items-center group cursor-pointer"
+                    >
+                      {/* 3:4 Aspect Ratio Cover Thumbnail */}
+                      <div className="w-full aspect-[3/4] bg-slate-900 rounded-xl border border-slate-700 group-hover:border-yellow-400 transition-all mb-2 relative overflow-hidden flex items-center justify-center shadow-lg">
+                        {cover ? (
+                          <img
+                            src={cover}
+                            alt={deck.deckName || "Deck Cover"}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="text-center p-2 text-slate-600">
+                            <span className="text-[10px] font-bold block">TCG</span>
+                            <span className="text-[8px]">Card</span>
+                          </div>
+                        )}
+                        <div className={`absolute top-1.5 left-1.5 w-5 h-5 rounded-full flex items-center justify-center font-black text-[10px] border-2 border-[#0a0e17] shadow ${
+                          i === 0 ? "bg-yellow-400 text-slate-950" : i === 1 ? "bg-slate-300 text-slate-950" : "bg-amber-600 text-white"
+                        }`}>
+                          {i + 1}
+                        </div>
+                      </div>
+
+                      <span className="font-black text-xs text-white text-center line-clamp-1 group-hover:text-yellow-400 transition-colors">
+                        {deck.deckName || "Top Deck"}
+                      </span>
+                      <span className="text-[10px] font-black uppercase mt-0.5" style={{ color: deck.tcg.color || "#eab308" }}>
+                        {deck.tcg.name}
+                      </span>
+                      <span className="text-[9px] text-slate-500 font-bold">TOP {deck.placement}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-slate-500 text-xs">
+                <Trophy className="w-10 h-10 mx-auto mb-2 opacity-30 text-yellow-400" />
+                No hay top decks publicados aún.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Ranking Preview with AVATARS */}
+        <div className="xl:col-span-3 bg-[#0a0e17] rounded-2xl border border-slate-800 p-6 flex flex-col justify-between shadow-xl">
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xs font-black text-slate-400 tracking-wider uppercase">RANKING GENERAL</h3>
+              <Link href="/ranking" className="text-[11px] text-yellow-400 font-black hover:underline">
+                VER RANKING →
+              </Link>
+            </div>
+            <RankingPreview />
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// Server component to compute ranking from decklists
+// Server component to compute ranking with player cover avatars
 async function RankingPreview() {
   const POINTS: Record<number, number> = { 1: 100, 2: 75, 3: 50, 4: 50 };
 
   const decklists = await prisma.decklist.findMany({
-    select: { playerName: true, placement: true },
+    select: { playerName: true, placement: true, coverImageUrl: true, deckData: true },
+    orderBy: { createdAt: "desc" },
   });
 
-  const playerMap: Record<string, number> = {};
+  const playerMap: Record<string, { pts: number; coverUrl?: string | null }> = {};
   for (const d of decklists) {
     const pts = POINTS[d.placement] ?? (d.placement <= 8 ? 25 : 0);
-    playerMap[d.playerName] = (playerMap[d.playerName] ?? 0) + pts;
+    if (!playerMap[d.playerName]) {
+      let cover = d.coverImageUrl;
+      if (!cover) {
+        try {
+          const parsed = JSON.parse(d.deckData);
+          cover = parsed.main?.[0]?.image_url || parsed.extra?.[0]?.image_url;
+        } catch (e) {}
+      }
+      playerMap[d.playerName] = { pts: 0, coverUrl: cover };
+    }
+    playerMap[d.playerName].pts += pts;
   }
 
   const sorted = Object.entries(playerMap)
-    .map(([name, pts]) => ({ name, pts }))
+    .map(([name, data]) => ({ name, ...data }))
     .sort((a, b) => b.pts - a.pts)
     .slice(0, 5);
 
   if (sorted.length === 0) {
-    return <p className="text-slate-500 text-xs text-center py-4">Sin datos de ranking aún</p>;
+    return <p className="text-slate-500 text-xs text-center py-6">Sin datos de ranking aún</p>;
   }
 
-  const colors = ["text-yellow-500", "text-slate-400", "text-orange-700", "text-slate-500", "text-slate-500"];
+  const colors = ["text-yellow-400", "text-slate-300", "text-amber-500", "text-slate-400", "text-slate-500"];
 
   return (
-    <div className="flex flex-col gap-4 flex-grow justify-center">
+    <div className="space-y-3">
       {sorted.map((p, i) => (
-        <div key={p.name} className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className={`font-black text-sm ${colors[i]}`}>{String(i + 1).padStart(2, "0")}</span>
-            <div className="w-6 h-6 bg-slate-700 rounded-full"></div>
-            <span className="font-bold text-sm text-slate-200">{p.name}</span>
+        <div key={p.name} className="flex items-center justify-between py-1">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className={`font-black text-xs w-5 ${colors[i]}`}>{String(i + 1).padStart(2, "0")}</span>
+            {/* Player Avatar / Deck Cover Thumbnail */}
+            <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center shrink-0 shadow">
+              {p.coverUrl ? (
+                <img src={p.coverUrl} alt={p.name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[10px] font-black text-yellow-400 uppercase">
+                  {p.name.substring(0, 2)}
+                </span>
+              )}
+            </div>
+            <span className="font-bold text-xs text-white truncate max-w-[110px]">{p.name}</span>
           </div>
-          <span className="text-xs text-slate-400 font-semibold">{p.pts} pts</span>
+          <span className="text-xs text-yellow-400 font-black shrink-0">{p.pts} pts</span>
         </div>
       ))}
     </div>
