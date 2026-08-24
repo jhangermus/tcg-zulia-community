@@ -5,15 +5,48 @@ import { deleteDecklist } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
 
+const DEFAULT_TCGS = [
+  { name: "Yu-Gi-Oh!", slug: "yugioh", status: "ACTIVE", color: "#ef4444" },
+  { name: "One Piece", slug: "one-piece", status: "ACTIVE", color: "#8b5cf6" },
+  { name: "Digimon", slug: "digimon", status: "ACTIVE", color: "#3b82f6" },
+];
+
 export default async function AdminDecksPage() {
-  const [tournaments, tcgs, decklists] = await Promise.all([
+  // Ensure default TCGs exist
+  for (const defTcg of DEFAULT_TCGS) {
+    await prisma.tcg.upsert({
+      where: { slug: defTcg.slug },
+      update: { status: "ACTIVE" },
+      create: defTcg,
+    });
+  }
+
+  let [tournaments, tcgs, decklists] = await Promise.all([
     prisma.tournament.findMany({ orderBy: { date: "desc" } }),
-    prisma.tcg.findMany({ where: { status: "ACTIVE" } }),
+    prisma.tcg.findMany({ where: { status: "ACTIVE" }, orderBy: { name: "asc" } }),
     prisma.decklist.findMany({
       orderBy: { createdAt: "desc" },
       include: { tournament: true, tcg: true },
     }),
   ]);
+
+  // Ensure each TCG has at least one default tournament so admin is never blocked
+  for (const tcg of tcgs) {
+    const hasTournament = tournaments.some((t) => t.tcgId === tcg.id);
+    if (!hasTournament) {
+      const created = await prisma.tournament.create({
+        data: {
+          name: `Torneo Zulia - ${tcg.name}`,
+          date: new Date(),
+          location: "Maracaibo, Zulia",
+          status: "COMPLETED",
+          tcgId: tcg.id,
+          participantsCount: 16,
+        },
+      });
+      tournaments.push(created);
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -23,7 +56,7 @@ export default async function AdminDecksPage() {
           <PenTool className="text-yellow-400 w-8 h-8" /> Creador y Gestor de Top Decks
         </h1>
         <p className="text-slate-400 mt-1 font-medium">
-          Construye las listas de cartas oficiales de los campeones y súbelas al sitio web.
+          Construye las listas de cartas oficiales de los campeones para Yu-Gi-Oh!, One Piece y Digimon.
         </p>
       </div>
 
