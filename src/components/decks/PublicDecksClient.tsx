@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trophy, Layers, Sparkles, Shield, X, Eye, Calendar, User, MapPin } from "lucide-react";
+import { Trophy, Layers, Sparkles, Shield, X, Eye, Calendar, User, MapPin, MessageSquare } from "lucide-react";
 
 export interface DeckCardItem {
   id: string | number;
@@ -19,6 +19,7 @@ export interface DecklistItem {
   tcgName: string;
   tcgSlug: string;
   tcgColor?: string | null;
+  adminNotes?: string | null;
   createdAt: string;
   deckData: {
     main: DeckCardItem[];
@@ -42,6 +43,13 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
     if (selectedTcg === "ALL") return true;
     return deck.tcgSlug === selectedTcg || deck.tcgName.toLowerCase() === selectedTcg.toLowerCase();
   });
+
+  const getPlacementBadge = (p: number) => {
+    if (p === 1) return { label: "1er Lugar (Campeón)", bg: "bg-yellow-400 text-slate-950", border: "border-yellow-400" };
+    if (p === 2) return { label: "Finalista (2do)", bg: "bg-slate-300 text-slate-950", border: "border-slate-400" };
+    if (p <= 4) return { label: `Top 4 (#${p})`, bg: "bg-amber-600 text-white", border: "border-amber-500" };
+    return { label: `Top 8 (#${p})`, bg: "bg-slate-800 text-slate-300", border: "border-slate-700" };
+  };
 
   return (
     <div className="space-y-8">
@@ -80,9 +88,9 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
       {filteredDecks.length === 0 ? (
         <div className="bg-[#0a0e17] border border-slate-800 rounded-2xl p-16 text-center text-slate-500 space-y-3">
           <Trophy className="w-16 h-16 mx-auto opacity-20 text-yellow-400" />
-          <h3 className="text-lg font-black text-white">No hay Top Decks publicados todavía</h3>
+          <h3 className="text-lg font-black text-white">No hay Top Decks publicados para este filtro</h3>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
-            Los mazos campeones de los torneos oficiales se publicarán aquí desde el panel de administración.
+            Los mazos ganadores de cada torneo oficial se publican desde el panel de administración.
           </p>
         </div>
       ) : (
@@ -96,6 +104,8 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
             const mainCount = deck.deckData.main.length;
             const extraCount = deck.deckData.extra.length;
             const sideCount = deck.deckData.side.length;
+
+            const badgeInfo = getPlacementBadge(deck.placement);
 
             const themeBorder = isYgo
               ? "hover:border-red-500/60 border-slate-800"
@@ -127,12 +137,10 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
                     <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg border ${badgeBg}`}>
                       {deck.tcgName}
                     </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-slate-500">{deck.createdAt}</span>
-                      <div className="flex items-center gap-1 bg-yellow-400/10 border border-yellow-400/30 px-2.5 py-0.5 rounded-full">
-                        <Trophy className="w-3 h-3 text-yellow-400" />
-                        <span className="text-yellow-400 font-black text-xs">TOP {deck.placement}</span>
-                      </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${badgeInfo.bg} ${badgeInfo.border}`}>
+                        {badgeInfo.label}
+                      </span>
                     </div>
                   </div>
 
@@ -140,12 +148,20 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
                   <h3 className="font-black text-xl text-white group-hover:text-yellow-400 transition-colors line-clamp-1 mb-1">
                     {deck.deckName}
                   </h3>
-                  <p className="text-xs font-semibold text-slate-400 mb-5">
+                  <p className="text-xs font-semibold text-slate-400 mb-4">
                     Piloto: <span className="text-slate-200 font-bold">{deck.playerName}</span> • {deck.tournamentName}
                   </p>
 
+                  {/* Admin Commentary Snippet (if available) */}
+                  {deck.adminNotes && (
+                    <div className="bg-yellow-400/5 border border-yellow-400/20 rounded-xl p-2.5 mb-4 text-[11px] text-yellow-300/90 font-medium flex items-start gap-2">
+                      <MessageSquare className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />
+                      <span className="line-clamp-2 italic">&ldquo;{deck.adminNotes}&rdquo;</span>
+                    </div>
+                  )}
+
                   {/* Card Counts (Congruent per TCG) */}
-                  <div className="grid grid-cols-3 gap-2 bg-slate-900/90 border border-slate-800/80 rounded-xl p-3 mb-5 text-center text-xs">
+                  <div className="grid grid-cols-3 gap-2 bg-slate-900/90 border border-slate-800/80 rounded-xl p-3 mb-4 text-center text-xs">
                     <div>
                       <p className="text-[9px] font-black text-slate-500 uppercase tracking-wider">MAIN</p>
                       <p className="font-black text-white text-sm mt-0.5">{mainCount}</p>
@@ -203,28 +219,40 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
           >
             {/* Modal Header */}
             <div className="p-6 border-b border-slate-800 flex items-start justify-between bg-slate-900/50">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[10px] font-black px-2.5 py-0.5 rounded bg-yellow-400 text-slate-950 uppercase">
                     {activeModalDeck.tcgName}
                   </span>
-                  <span className="text-xs font-bold text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-2.5 py-0.5 rounded-full">
-                    Top {activeModalDeck.placement}
+                  <span className="text-xs font-black text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-2.5 py-0.5 rounded-full">
+                    {getPlacementBadge(activeModalDeck.placement).label}
                   </span>
+                  <span className="text-xs text-slate-400">• {activeModalDeck.tournamentName}</span>
                 </div>
                 <h2 className="text-2xl md:text-3xl font-black text-white">{activeModalDeck.deckName}</h2>
-                <p className="text-xs text-slate-400 flex items-center gap-3">
+                <p className="text-xs text-slate-400 flex items-center gap-2">
                   <span className="flex items-center gap-1 font-bold text-slate-200">
-                    <User className="w-3.5 h-3.5 text-slate-500" /> {activeModalDeck.playerName}
+                    <User className="w-3.5 h-3.5 text-slate-500" /> Piloto: {activeModalDeck.playerName}
                   </span>
-                  <span>•</span>
-                  <span>{activeModalDeck.tournamentName}</span>
                 </p>
+
+                {/* Admin Notes in Modal */}
+                {activeModalDeck.adminNotes && (
+                  <div className="mt-3 bg-yellow-400/10 border border-yellow-400/30 rounded-xl p-3 text-xs text-yellow-300 font-medium flex items-start gap-2">
+                    <MessageSquare className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block text-[10px] uppercase tracking-wider text-yellow-400 mb-0.5">
+                        Comentario / Análisis del Organizador
+                      </strong>
+                      <p className="italic">{activeModalDeck.adminNotes}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button
                 onClick={() => setActiveModalDeck(null)}
-                className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+                className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>

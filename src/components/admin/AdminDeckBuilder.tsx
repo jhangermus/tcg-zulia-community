@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   PenTool, Search, Plus, Trash2, Save,
-  Layers, Sparkles, RefreshCw, Check, Shield, Gamepad2
+  Layers, Sparkles, RefreshCw, Check, Shield, Gamepad2, MessageSquare
 } from "lucide-react";
 import { createDecklist } from "@/lib/actions";
 
@@ -18,15 +18,27 @@ interface Card {
 interface AdminDeckBuilderProps {
   tournaments: Array<{ id: string; name: string; tcgId: string }>;
   tcgs: Array<{ id: string; name: string; slug: string }>;
+  initialTournamentId?: string;
+  initialTcgId?: string;
 }
 
-export function AdminDeckBuilder({ tournaments, tcgs }: AdminDeckBuilderProps) {
+export function AdminDeckBuilder({
+  tournaments,
+  tcgs,
+  initialTournamentId,
+  initialTcgId,
+}: AdminDeckBuilderProps) {
   // Safe default TCG fallback
-  const initialTcg = tcgs.find((t) => t.slug === "yugioh") || tcgs[0] || { id: "ygo", name: "Yu-Gi-Oh!", slug: "yugioh" };
-  const [selectedTcgId, setSelectedTcgId] = useState(initialTcg.id);
+  const defaultTcg =
+    (initialTcgId && tcgs.find((t) => t.id === initialTcgId)) ||
+    tcgs.find((t) => t.slug === "yugioh") ||
+    tcgs[0] ||
+    { id: "ygo", name: "Yu-Gi-Oh!", slug: "yugioh" };
+
+  const [selectedTcgId, setSelectedTcgId] = useState(defaultTcg.id);
 
   // Active TCG info
-  const activeTcg = tcgs.find((t) => t.id === selectedTcgId) || initialTcg;
+  const activeTcg = tcgs.find((t) => t.id === selectedTcgId) || defaultTcg;
   const tcgSlug = activeTcg?.slug || activeTcg?.name?.toLowerCase() || "yugioh";
 
   const isOnePiece = tcgSlug.includes("one") || tcgSlug.includes("piece") || tcgSlug.includes("op");
@@ -35,13 +47,20 @@ export function AdminDeckBuilder({ tournaments, tcgs }: AdminDeckBuilderProps) {
 
   // Filter tournaments for selected TCG
   const relevantTournaments = tournaments.filter((t) => t.tcgId === selectedTcgId);
-  const fallbackTournament = relevantTournaments[0] || tournaments[0] || { id: "", name: "Sin Torneo Asignado", tcgId: selectedTcgId };
+  const fallbackTournament =
+    (initialTournamentId && tournaments.find((t) => t.id === initialTournamentId)) ||
+    relevantTournaments[0] ||
+    tournaments[0] ||
+    { id: "", name: "Sin Torneo Asignado", tcgId: selectedTcgId };
+
   const [selectedTournamentId, setSelectedTournamentId] = useState(fallbackTournament.id);
 
   // When TCG changes, update selected tournament if needed
   useEffect(() => {
     if (relevantTournaments.length > 0) {
-      setSelectedTournamentId(relevantTournaments[0].id);
+      if (!relevantTournaments.some((t) => t.id === selectedTournamentId)) {
+        setSelectedTournamentId(relevantTournaments[0].id);
+      }
     } else if (tournaments.length > 0) {
       setSelectedTournamentId(tournaments[0].id);
     }
@@ -50,6 +69,7 @@ export function AdminDeckBuilder({ tournaments, tcgs }: AdminDeckBuilderProps) {
   const [playerName, setPlayerName] = useState("");
   const [deckName, setDeckName] = useState("");
   const [placement, setPlacement] = useState(1);
+  const [adminNotes, setAdminNotes] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Card[]>([]);
@@ -131,7 +151,7 @@ export function AdminDeckBuilder({ tournaments, tcgs }: AdminDeckBuilderProps) {
   const handleSaveDeck = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!playerName || !deckName || !selectedTournamentId || !selectedTcgId) {
-      alert("Por favor completa todos los campos del formulario.");
+      alert("Por favor completa los datos del torneo, jugador y nombre del mazo.");
       return;
     }
 
@@ -148,6 +168,9 @@ export function AdminDeckBuilder({ tournaments, tcgs }: AdminDeckBuilderProps) {
       formData.append("placement", placement.toString());
       formData.append("tournamentId", selectedTournamentId);
       formData.append("tcgId", selectedTcgId);
+      if (adminNotes.trim()) {
+        formData.append("adminNotes", adminNotes.trim());
+      }
       formData.append(
         "deckData",
         JSON.stringify({
@@ -159,6 +182,15 @@ export function AdminDeckBuilder({ tournaments, tcgs }: AdminDeckBuilderProps) {
 
       await createDecklist(formData);
       setSavedSuccess(true);
+      
+      // Clean form for next entry
+      setPlayerName("");
+      setDeckName("");
+      setAdminNotes("");
+      setMainDeck([]);
+      setExtraDeck([]);
+      setSideDeck([]);
+
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err) {
       console.error("Error saving deck:", err);
@@ -211,70 +243,98 @@ export function AdminDeckBuilder({ tournaments, tcgs }: AdminDeckBuilderProps) {
       {/* Top Form: Tournament and Player Details */}
       <div className="bg-[#0a0e17] border border-slate-800 rounded-xl p-6 shadow-xl">
         <h2 className="font-black text-white text-lg mb-4 flex items-center gap-2">
-          <PenTool className="w-5 h-5 text-yellow-400" /> Información del Top Deck ({activeTcg.name})
+          <PenTool className="w-5 h-5 text-yellow-400" /> Cargar Top Deck al Torneo ({activeTcg.name})
         </h2>
 
-        <form onSubmit={handleSaveDeck} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">TORNEO *</label>
-            <select
-              value={selectedTournamentId}
-              onChange={(e) => setSelectedTournamentId(e.target.value)}
-              required
-              className="w-full bg-slate-900 border border-slate-700 text-white px-3 py-2 rounded-lg text-xs focus:outline-none focus:border-yellow-400"
-            >
-              {relevantTournaments.length > 0 ? (
-                relevantTournaments.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))
-              ) : (
-                tournaments.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))
-              )}
-            </select>
+        <form onSubmit={handleSaveDeck} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Tournament */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">
+                TORNEO AL QUE PERTENECE *
+              </label>
+              <select
+                value={selectedTournamentId}
+                onChange={(e) => setSelectedTournamentId(e.target.value)}
+                required
+                className="w-full bg-slate-900 border border-slate-700 text-white px-3 py-2.5 rounded-lg text-xs focus:outline-none focus:border-yellow-400 font-bold"
+              >
+                {relevantTournaments.length > 0 ? (
+                  relevantTournaments.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))
+                ) : (
+                  tournaments.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            {/* Position / Top */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">
+                POSICIÓN DEL TOP *
+              </label>
+              <select
+                value={placement}
+                onChange={(e) => setPlacement(Number(e.target.value))}
+                className="w-full bg-slate-900 border border-slate-700 text-white px-3 py-2.5 rounded-lg text-xs focus:outline-none focus:border-yellow-400 font-bold"
+              >
+                <option value={1}>🥇 1er Lugar (Campeón)</option>
+                <option value={2}>🥈 Finalista (2do Lugar)</option>
+                <option value={3}>🥉 Top 4 (3er Lugar)</option>
+                <option value={4}>🥉 Top 4 (4to Lugar)</option>
+                <option value={8}>🎖️ Top 8</option>
+              </select>
+            </div>
+
+            {/* Player Pilot */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">
+                JUGADOR (PILOTO) *
+              </label>
+              <input
+                type="text"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                placeholder="Ej: Jhanger U."
+                required
+                className="w-full bg-slate-900 border border-slate-700 text-white px-3.5 py-2.5 rounded-lg text-xs focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+
+            {/* Deck Name */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">
+                NOMBRE DEL DECK *
+              </label>
+              <input
+                type="text"
+                value={deckName}
+                onChange={(e) => setDeckName(e.target.value)}
+                placeholder={isOnePiece ? "Ej: Red/Purple Luffy" : isDigimon ? "Ej: Blue Flare Greymon" : "Ej: Snake-Eye Fiendsmith"}
+                required
+                className="w-full bg-slate-900 border border-slate-700 text-white px-3.5 py-2.5 rounded-lg text-xs focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+
+            {/* Admin Commentary / Review (Optional) */}
+            <div className="md:col-span-2 lg:col-span-4">
+              <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-yellow-400" /> COMENTARIOS / ANÁLISIS DEL ADMIN (OPCIONAL)
+              </label>
+              <textarea
+                rows={2}
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+                placeholder="Escribe algún análisis, cartas destacadas, desempeño del jugador en las rondas o notas sobre el torneo..."
+                className="w-full bg-slate-900 border border-slate-700 text-white px-3.5 py-2 rounded-lg text-xs focus:outline-none focus:border-yellow-400 resize-none"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">JUGADOR (PILOTO) *</label>
-            <input
-              type="text"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Ej: Jhanger U."
-              required
-              className="w-full bg-slate-900 border border-slate-700 text-white px-3 py-2 rounded-lg text-xs focus:outline-none focus:border-yellow-400"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">NOMBRE DEL DECK *</label>
-            <input
-              type="text"
-              value={deckName}
-              onChange={(e) => setDeckName(e.target.value)}
-              placeholder={isOnePiece ? "Ej: Red/Purple Luffy" : isDigimon ? "Ej: Blue Flare Greymon" : "Ej: Snake-Eye Fiendsmith"}
-              required
-              className="w-full bg-slate-900 border border-slate-700 text-white px-3 py-2 rounded-lg text-xs focus:outline-none focus:border-yellow-400"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">POSICIÓN / TOP *</label>
-            <select
-              value={placement}
-              onChange={(e) => setPlacement(Number(e.target.value))}
-              className="w-full bg-slate-900 border border-slate-700 text-white px-3 py-2 rounded-lg text-xs focus:outline-none focus:border-yellow-400"
-            >
-              <option value={1}>1er Lugar (Campeón)</option>
-              <option value={2}>2do Lugar (Finalista)</option>
-              <option value={3}>Top 4 (3er Lugar)</option>
-              <option value={4}>Top 4 (4to Lugar)</option>
-              <option value={8}>Top 8</option>
-            </select>
-          </div>
-
-          <div className="lg:col-span-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
             <span className="text-xs font-bold text-slate-400">
               Cartas en mazo: <span className="text-white font-extrabold">{mainDeck.length} Main</span>
               {extraDeck.length > 0 && (
@@ -288,10 +348,10 @@ export function AdminDeckBuilder({ tournaments, tcgs }: AdminDeckBuilderProps) {
             <button
               type="submit"
               disabled={isSaving}
-              className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black px-6 py-2.5 rounded-lg text-xs transition-colors tracking-widest disabled:opacity-50"
+              className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black px-8 py-3 rounded-lg text-xs transition-colors tracking-widest disabled:opacity-50 shadow-lg shadow-yellow-400/20"
             >
               {savedSuccess ? <Check className="w-4 h-4 text-green-900" /> : <Save className="w-4 h-4" />}
-              {savedSuccess ? "¡TOP DECK GUARDADO!" : isSaving ? "GUARDANDO..." : "GUARDAR TOP DECK EN BD"}
+              {savedSuccess ? "¡TOP DECK PUBLICADO CON ÉXITO!" : isSaving ? "GUARDANDO..." : "PUBLICAR TOP DECK"}
             </button>
           </div>
         </form>

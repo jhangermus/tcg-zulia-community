@@ -202,6 +202,7 @@ const DecklistSchema = z.object({
   tournamentId: z.string().min(1, "Selecciona un torneo"),
   tcgId: z.string().min(1, "Selecciona un TCG"),
   deckData: z.string().min(2),
+  adminNotes: z.string().optional(),
 });
 
 export async function createDecklist(formData: FormData) {
@@ -213,6 +214,7 @@ export async function createDecklist(formData: FormData) {
     tournamentId: formData.get("tournamentId"),
     tcgId: formData.get("tcgId"),
     deckData: formData.get("deckData"),
+    adminNotes: formData.get("adminNotes") ? String(formData.get("adminNotes")) : undefined,
   });
 
   if (!validated.success) {
@@ -221,6 +223,7 @@ export async function createDecklist(formData: FormData) {
 
   await prisma.decklist.create({ data: validated.data });
   revalidatePath("/admin/decks");
+  revalidatePath("/admin/torneos");
   revalidatePath("/decks");
   revalidatePath("/torneos");
   revalidatePath("/");

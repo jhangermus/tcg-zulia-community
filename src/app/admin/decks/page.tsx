@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { PenTool, Trash2, Trophy, Layers } from "lucide-react";
+import { PenTool, Trash2, Trophy, Layers, MessageSquare } from "lucide-react";
 import { AdminDeckBuilder } from "@/components/admin/AdminDeckBuilder";
 import { deleteDecklist } from "@/lib/actions";
 
@@ -11,7 +11,15 @@ const DEFAULT_TCGS = [
   { name: "Digimon", slug: "digimon", status: "ACTIVE", color: "#3b82f6" },
 ];
 
-export default async function AdminDecksPage() {
+export default async function AdminDecksPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tournamentId?: string; tcgId?: string }>;
+}) {
+  const resolvedParams = searchParams ? await searchParams : undefined;
+  const initialTournamentId = resolvedParams?.tournamentId;
+  const initialTcgId = resolvedParams?.tcgId;
+
   // Ensure default TCGs exist
   for (const defTcg of DEFAULT_TCGS) {
     await prisma.tcg.upsert({
@@ -56,7 +64,7 @@ export default async function AdminDecksPage() {
           <PenTool className="text-yellow-400 w-8 h-8" /> Creador y Gestor de Top Decks
         </h1>
         <p className="text-slate-400 mt-1 font-medium">
-          Construye las listas de cartas oficiales de los campeones para Yu-Gi-Oh!, One Piece y Digimon.
+          Carga las decklists de los ganadores de cada torneo (1er Lugar, Finalista, Top 4, Top 8) con notas y comentarios oficiales.
         </p>
       </div>
 
@@ -64,6 +72,8 @@ export default async function AdminDecksPage() {
       <AdminDeckBuilder
         tournaments={tournaments.map((t) => ({ id: t.id, name: t.name, tcgId: t.tcgId }))}
         tcgs={tcgs.map((tcg) => ({ id: tcg.id, name: tcg.name, slug: tcg.slug }))}
+        initialTournamentId={initialTournamentId}
+        initialTcgId={initialTcgId}
       />
 
       {/* List of Existing Saved Decks */}
@@ -82,7 +92,7 @@ export default async function AdminDecksPage() {
           <div className="divide-y divide-slate-800">
             {decklists.map((deck) => (
               <div key={deck.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-800/30 transition-colors">
-                <div className="w-10 h-10 rounded-lg bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center text-yellow-400 font-black text-sm">
+                <div className="w-10 h-10 rounded-lg bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center text-yellow-400 font-black text-sm shrink-0">
                   #{deck.placement}
                 </div>
 
@@ -95,6 +105,11 @@ export default async function AdminDecksPage() {
                   </div>
                   <p className="font-black text-white text-sm">{deck.deckName}</p>
                   <p className="text-xs text-slate-400 font-medium">Piloto: {deck.playerName}</p>
+                  {deck.adminNotes && (
+                    <p className="text-[11px] text-yellow-400/80 font-medium mt-1 flex items-center gap-1 line-clamp-1">
+                      <MessageSquare className="w-3 h-3 shrink-0" /> {deck.adminNotes}
+                    </p>
+                  )}
                 </div>
 
                 {/* Delete */}

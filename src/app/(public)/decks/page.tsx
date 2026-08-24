@@ -35,6 +35,7 @@ export default async function DecksPage() {
       tcgName: d.tcg.name,
       tcgSlug: d.tcg.slug,
       tcgColor: d.tcg.color,
+      adminNotes: d.adminNotes,
       createdAt: new Date(d.createdAt).toLocaleDateString("es-VE"),
       deckData: {
         main: parsedData.main || [],
