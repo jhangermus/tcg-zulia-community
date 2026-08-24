@@ -1,0 +1,34 @@
+{
+  "name": "zulia-tcg-community",
+  "version": "1.0.0",
+  "description": "A community platform for Zulia TCG, focused on tournaments, decks, and community interactions.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "next": "^13.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "next-auth": "^4.0.0",
+    "prisma": "^3.0.0",
+    "pg": "^8.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.0.0",
+    "eslint": "^7.0.0",
+    "eslint-config-next": "^12.0.0"
+  },
+  "keywords": [
+    "nextjs",
+    "react",
+    "community",
+    "tcg",
+    "tournaments"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

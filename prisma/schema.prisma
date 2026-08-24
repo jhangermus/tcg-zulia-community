@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("ADMIN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tcg {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  status      String   @default("ACTIVE") // "ACTIVE", "SUSPENDED", "NOT_PLAYED"
+  imageUrl    String?
+  color       String?  // accent color for the TCG card
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tournaments Tournament[]
+  decklists   Decklist[]
+}
+
+model News {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  imageUrl  String?
+  tag       String   @default("NOTICIAS") // "RESULTADOS", "DECK PROFILE", "COMUNIDAD", "ANUNCIO"
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tournament {
+  id          String   @id @default(cuid())
+  name        String
+  date        DateTime
+  location    String?
+  prize       String?
+  tcgId       String
+  tcg         Tcg      @relation(fields: [tcgId], references: [id])
+  participantsCount Int @default(0)
+  status      String   @default("UPCOMING") // "UPCOMING", "ONGOING", "COMPLETED"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  decklists   Decklist[]
+}
+
+model Decklist {
+  id           String     @id @default(cuid())
+  playerName   String
+  placement    Int
+  deckName     String?
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tcgId        String
+  tcg          Tcg        @relation(fields: [tcgId], references: [id], onDelete: Cascade)
+  deckData     String     // JSON stringified
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  stock       Int      @default(0)
+  imageUrl    String?
+  category    String?  // "SLEEVES", "PLAYMATS", "SINGLES", "ACCESORIOS"
+  status      String   @default("AVAILABLE") // "AVAILABLE", "OUT_OF_STOCK", "HIDDEN"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SiteConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique  // e.g. "instagram_url", "whatsapp_number"
+  value       String
+  updatedAt   DateTime @updatedAt
+}
