@@ -83,32 +83,88 @@ export async function deleteTcg(id: string) {
 // --- NEWS ACTIONS ---
 
 const NewsSchema = z.object({
-  title: z.string().min(1),
-  content: z.string().min(1),
-  tag: z.string().optional(),
+  title: z.string().min(1, "El título es requerido"),
+  content: z.string().min(1, "El contenido es requerido"),
+  tag: z.string().default("NOTICIAS"),
+  tcgSlug: z.string().optional(),
   imageUrl: z.string().optional(),
+  sourceUrl: z.string().optional(),
+  sourceName: z.string().optional(),
+  publishedAt: z.string().optional(),
+  published: z.coerce.boolean().default(true),
 });
 
 export async function createNews(formData: FormData) {
   await requireAdmin();
+  const publishedAtRaw = formData.get("publishedAt") as string;
+  const publishedAt = publishedAtRaw ? new Date(publishedAtRaw) : new Date();
+
   const validated = NewsSchema.safeParse({
     title: formData.get("title"),
     content: formData.get("content"),
     tag: formData.get("tag") || "NOTICIAS",
+    tcgSlug: formData.get("tcgSlug") || undefined,
     imageUrl: formData.get("imageUrl") || undefined,
+    sourceUrl: formData.get("sourceUrl") || undefined,
+    sourceName: formData.get("sourceName") || undefined,
+    published: formData.get("published") !== "false",
   });
 
-  if (!validated.success) return;
+  if (!validated.success) return { error: "Datos inválidos" };
 
-  await prisma.news.create({ data: validated.data });
+  await prisma.news.create({
+    data: {
+      ...validated.data,
+      publishedAt: isNaN(publishedAt.getTime()) ? new Date() : publishedAt,
+    },
+  });
+
   revalidatePath("/admin/noticias");
+  revalidatePath("/noticias");
   revalidatePath("/");
+  return { success: true };
+}
+
+export async function updateNews(formData: FormData) {
+  await requireAdmin();
+  const id = formData.get("id") as string;
+  if (!id) return { error: "ID no proporcionado" };
+
+  const publishedAtRaw = formData.get("publishedAt") as string;
+  const publishedAt = publishedAtRaw ? new Date(publishedAtRaw) : new Date();
+
+  const validated = NewsSchema.safeParse({
+    title: formData.get("title"),
+    content: formData.get("content"),
+    tag: formData.get("tag") || "NOTICIAS",
+    tcgSlug: formData.get("tcgSlug") || undefined,
+    imageUrl: formData.get("imageUrl") || undefined,
+    sourceUrl: formData.get("sourceUrl") || undefined,
+    sourceName: formData.get("sourceName") || undefined,
+    published: formData.get("published") !== "false",
+  });
+
+  if (!validated.success) return { error: "Datos inválidos" };
+
+  await prisma.news.update({
+    where: { id },
+    data: {
+      ...validated.data,
+      publishedAt: isNaN(publishedAt.getTime()) ? new Date() : publishedAt,
+    },
+  });
+
+  revalidatePath("/admin/noticias");
+  revalidatePath("/noticias");
+  revalidatePath("/");
+  return { success: true };
 }
 
 export async function deleteNews(id: string) {
   await requireAdmin();
   await prisma.news.delete({ where: { id } });
   revalidatePath("/admin/noticias");
+  revalidatePath("/noticias");
   revalidatePath("/");
 }
 
@@ -116,6 +172,18 @@ export async function toggleNewsPublished(id: string, published: boolean) {
   await requireAdmin();
   await prisma.news.update({ where: { id }, data: { published } });
   revalidatePath("/admin/noticias");
+  revalidatePath("/noticias");
+  revalidatePath("/");
+}
+
+export async function syncExternalNewsAction() {
+  await requireAdmin();
+  const { syncAllExternalNews } = await import("./news-fetcher");
+  const result = await syncAllExternalNews();
+  revalidatePath("/admin/noticias");
+  revalidatePath("/noticias");
+  revalidatePath("/");
+  return result;
 }
 
 // --- PRODUCT ACTIONS ---

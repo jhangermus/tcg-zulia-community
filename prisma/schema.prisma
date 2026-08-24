@@ -36,14 +36,18 @@ model Tcg {
 }
 
 model News {
-  id        String   @id @default(cuid())
-  title     String
-  content   String
-  imageUrl  String?
-  tag       String   @default("NOTICIAS") // "RESULTADOS", "DECK PROFILE", "COMUNIDAD", "ANUNCIO"
-  published Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  imageUrl    String?
+  tag         String   @default("NOTICIAS") // "LEAKS & REVEALS", "BANLIST", "PRODUCTO NUEVO", "RESULTADOS", "DECK PROFILE", "COMUNIDAD", "ANUNCIO"
+  tcgSlug     String?  // "yugioh", "one-piece", "digimon", "general"
+  sourceUrl   String?  // URL original externa (ej: https://ygorganization.com/...)
+  sourceName  String?  // Nombre de la fuente (ej: "YGOrganization", "Digimon Meta")
+  published   Boolean  @default(true)
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Tournament {
