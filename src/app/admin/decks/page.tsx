@@ -60,12 +60,13 @@ export default async function AdminDecksPage({
     playerName: d.playerName,
     deckName: d.deckName,
     placement: d.placement,
+    isRecommended: d.isRecommended,
     tournamentId: d.tournamentId,
     tcgId: d.tcgId,
     adminNotes: d.adminNotes,
     coverImageUrl: d.coverImageUrl,
     deckData: d.deckData,
-    tournament: { name: d.tournament.name },
+    tournament: d.tournament ? { name: d.tournament.name } : null,
     tcg: { name: d.tcg.name, slug: d.tcg.slug },
   }));
 

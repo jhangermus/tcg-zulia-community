@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
   PenTool, Search, Plus, Trash2, Save,
-  Layers, Sparkles, RefreshCw, Check, Shield, Gamepad2, MessageSquare, Star, Edit3, X, Upload, Image as ImageIcon
+  Layers, Sparkles, RefreshCw, Check, Shield, Gamepad2, MessageSquare, Star, Edit3, X, Upload, Image as ImageIcon, Award
 } from "lucide-react";
 import { createDecklist, updateDecklist, deleteDecklist } from "@/lib/actions";
 
@@ -20,12 +20,13 @@ export interface ExistingDeckItem {
   playerName: string;
   deckName: string | null;
   placement: number;
-  tournamentId: string;
+  isRecommended?: boolean;
+  tournamentId?: string | null;
   tcgId: string;
   adminNotes?: string | null;
   coverImageUrl?: string | null;
   deckData: string;
-  tournament: { name: string };
+  tournament?: { name: string } | null;
   tcg: { name: string; slug: string };
 }
 
@@ -61,10 +62,8 @@ export function AdminDeckBuilder({
   const isDigimon = tcgSlug.includes("digi");
   const isYugioh = !isOnePiece && !isDigimon;
 
-  // Filter tournaments for selected TCG
   const relevantTournaments = tournaments.filter((t) => t.tcgId === selectedTcgId);
   const fallbackTournament =
-    (initialTournamentId && tournaments.find((t) => t.id === initialTournamentId)) ||
     relevantTournaments[0] ||
     tournaments[0] ||
     { id: "", name: "Sin Torneo Asignado", tcgId: selectedTcgId };
@@ -73,6 +72,7 @@ export function AdminDeckBuilder({
 
   // Form states
   const [editingDeckId, setEditingDeckId] = useState<string | null>(null);
+  const [isRecommended, setIsRecommended] = useState(false);
   const [playerName, setPlayerName] = useState("");
   const [deckName, setDeckName] = useState("");
   const [placement, setPlacement] = useState(1);
@@ -163,24 +163,19 @@ export function AdminDeckBuilder({
     } else {
       setMainDeck((prev) => [...prev, card]);
     }
-
-    // Auto-set cover image if none chosen yet
-    if (!coverImageUrl && card.image_url) {
-      setCoverImageUrl(card.image_url);
-    }
   };
 
-  const removeCard = (index: number, from: "main" | "extra" | "side") => {
-    if (from === "main") {
-      setMainDeck((prev) => prev.filter((_, i) => i !== index));
-    } else if (from === "extra") {
+  const removeCard = (index: number, target: "main" | "extra" | "side") => {
+    if (target === "extra") {
       setExtraDeck((prev) => prev.filter((_, i) => i !== index));
-    } else {
+    } else if (target === "side") {
       setSideDeck((prev) => prev.filter((_, i) => i !== index));
+    } else {
+      setMainDeck((prev) => prev.filter((_, i) => i !== index));
     }
   };
 
-  // PC Upload Cover Image
+  // Handle local cover image file upload
   const handleCoverFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -195,14 +190,15 @@ export function AdminDeckBuilder({
     reader.readAsDataURL(file);
   };
 
-  // Load Deck into Editor
+  // Load a deck to edit
   const handleStartEditing = (deck: ExistingDeckItem) => {
     setEditingDeckId(deck.id);
     setSelectedTcgId(deck.tcgId);
-    setSelectedTournamentId(deck.tournamentId);
+    setSelectedTournamentId(deck.tournamentId || "");
+    setIsRecommended(!!deck.isRecommended);
     setPlayerName(deck.playerName);
     setDeckName(deck.deckName || "");
-    setPlacement(deck.placement);
+    setPlacement(deck.placement || (deck.isRecommended ? 0 : 1));
     setAdminNotes(deck.adminNotes || "");
     setCoverImageUrl(deck.coverImageUrl || null);
 
@@ -220,6 +216,7 @@ export function AdminDeckBuilder({
 
   const handleCancelEditing = () => {
     setEditingDeckId(null);
+    setIsRecommended(false);
     setPlayerName("");
     setDeckName("");
     setPlacement(1);
@@ -233,8 +230,13 @@ export function AdminDeckBuilder({
   // Submit to Server Action (Create or Update)
   const handleSaveDeck = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!playerName || !deckName || !selectedTournamentId || !selectedTcgId) {
-      alert("Por favor completa los datos del torneo, jugador y nombre del mazo.");
+    if (!playerName || !deckName || !selectedTcgId) {
+      alert("Por favor completa el autor/jugador y el nombre del mazo.");
+      return;
+    }
+
+    if (!isRecommended && !selectedTournamentId) {
+      alert("Para un Top de Torneo debes seleccionar el torneo correspondiente.");
       return;
     }
 
@@ -254,8 +256,11 @@ export function AdminDeckBuilder({
       }
       formData.append("playerName", playerName);
       formData.append("deckName", deckName);
-      formData.append("placement", placement.toString());
-      formData.append("tournamentId", selectedTournamentId);
+      formData.append("placement", isRecommended ? "0" : placement.toString());
+      formData.append("isRecommended", isRecommended ? "true" : "false");
+      if (selectedTournamentId) {
+        formData.append("tournamentId", selectedTournamentId);
+      }
       formData.append("tcgId", selectedTcgId);
       if (adminNotes.trim()) {
         formData.append("adminNotes", adminNotes.trim());
@@ -279,140 +284,185 @@ export function AdminDeckBuilder({
       }
 
       setSavedSuccess(true);
-      handleCancelEditing();
-      setTimeout(() => setSavedSuccess(false), 3000);
+      setTimeout(() => {
+        setSavedSuccess(false);
+        if (!editingDeckId) {
+          setPlayerName("");
+          setDeckName("");
+          setAdminNotes("");
+          setCoverImageUrl(null);
+          setMainDeck([]);
+          setExtraDeck([]);
+          setSideDeck([]);
+        } else {
+          handleCancelEditing();
+        }
+        window.location.reload();
+      }, 1000);
     } catch (err) {
-      console.error("Error saving deck:", err);
-      alert("Ocurrió un error al guardar el decklist.");
+      console.error("Error saving decklist:", err);
+      alert("Error al guardar la decklist.");
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleDeleteDeck = async (id: string, name: string) => {
+    if (confirm(`¿Estás seguro de eliminar el deck "${name}"?`)) {
+      await deleteDecklist(id);
+      window.location.reload();
+    }
+  };
+
   return (
-    <div ref={builderTopRef} className="space-y-6">
-      {/* TCG SELECTOR TABS */}
-      <div className="bg-[#0a0e17] border border-slate-800 rounded-xl p-4 shadow-xl">
-        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-          <Gamepad2 className="w-4 h-4 text-yellow-400" /> SELECCIONA EL JUEGO / TCG:
-        </label>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {tcgs.map((tcg) => {
-            const isSelected = tcg.id === selectedTcgId;
-            const isOP = tcg.slug.includes("one") || tcg.slug.includes("piece") || tcg.slug.includes("op");
-            const isDigi = tcg.slug.includes("digi");
-            const isYgo = !isOP && !isDigi;
-
-            const activeStyle = isYgo
-              ? "bg-red-500/20 border-red-500 text-red-400 shadow-red-500/20"
-              : isOP
-              ? "bg-purple-500/20 border-purple-500 text-purple-300 shadow-purple-500/20"
-              : "bg-blue-500/20 border-blue-500 text-blue-400 shadow-blue-500/20";
-
-            return (
-              <button
-                key={tcg.id}
-                type="button"
-                onClick={() => {
-                  setSelectedTcgId(tcg.id);
-                }}
-                className={`flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl border-2 font-black text-sm transition-all shadow-md ${
-                  isSelected
-                    ? `${activeStyle} shadow-lg scale-[1.02]`
-                    : "bg-slate-900/80 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-white"
-                }`}
-              >
-                <span className={`w-3 h-3 rounded-full ${isSelected ? (isYgo ? "bg-red-500" : isOP ? "bg-purple-500" : "bg-blue-500") : "bg-slate-700"}`}></span>
-                {tcg.name}
-              </button>
-            );
-          })}
-        </div>
+    <div ref={builderTopRef} className="space-y-8">
+      {/* TCG Selector Buttons */}
+      <div className="flex flex-wrap gap-2">
+        {tcgs.map((tcg) => (
+          <button
+            key={tcg.id}
+            type="button"
+            onClick={() => {
+              setSelectedTcgId(tcg.id);
+              if (editingDeckId) handleCancelEditing();
+            }}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-black transition-all ${
+              selectedTcgId === tcg.id
+                ? "bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/20"
+                : "bg-[#0a0e17] border border-slate-800 text-slate-400 hover:text-white"
+            }`}
+          >
+            <Gamepad2 className="w-4 h-4" />
+            {tcg.name.toUpperCase()}
+          </button>
+        ))}
       </div>
 
-      {/* Top Form: Tournament, Player, Cover Image Details */}
-      <div className="bg-[#0a0e17] border border-slate-800 rounded-xl p-6 shadow-xl relative">
+      {/* Main Builder Form Box */}
+      <div className="bg-[#0a0e17] border border-slate-800 rounded-xl p-6 relative">
         {editingDeckId && (
-          <div className="mb-4 bg-yellow-400/10 border border-yellow-400/30 rounded-xl p-3 flex items-center justify-between">
-            <span className="text-xs font-black text-yellow-400 flex items-center gap-2">
-              <Edit3 className="w-4 h-4" /> EDITANDO DECK EXISTENTE ({deckName || playerName})
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            <span className="bg-yellow-400/20 border border-yellow-400/50 text-yellow-400 text-[10px] font-black px-2.5 py-1 rounded">
+              MODO EDICIÓN
             </span>
             <button
-              type="button"
               onClick={handleCancelEditing}
-              className="text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
+              className="text-xs text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded flex items-center gap-1"
             >
-              <X className="w-3.5 h-3.5" /> Cancelar Edición
+              <X className="w-3.5 h-3.5" /> Cancelar
             </button>
           </div>
         )}
 
         <h2 className="font-black text-white text-lg mb-4 flex items-center gap-2">
           <PenTool className="w-5 h-5 text-yellow-400" />
-          {editingDeckId ? "Modificar Top Deck" : "Cargar Top Deck al Torneo"} ({activeTcg.name})
+          {editingDeckId ? "Modificar Deck" : "Cargar Decklist"} ({activeTcg.name})
         </h2>
 
         <form onSubmit={handleSaveDeck} className="space-y-4">
+          {/* Deck Type Selector: Top vs Recommended */}
+          <div className="bg-slate-900/80 border border-slate-700 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Award className="w-5 h-5 text-yellow-400" />
+              <div>
+                <span className="text-xs font-black text-white block">TIPO DE PUBLICACIÓN</span>
+                <span className="text-[11px] text-slate-400">
+                  {isRecommended
+                    ? "Decklist recomendada / guía para la comunidad (se muestra en /recomendadas)"
+                    : "Top oficial de torneo (suma puntos al ranking competitivo)"}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setIsRecommended(false)}
+                className={`px-4 py-2 text-xs font-black rounded-lg transition-all ${
+                  !isRecommended
+                    ? "bg-yellow-400 text-slate-950 shadow"
+                    : "bg-slate-800 text-slate-400 hover:text-white"
+                }`}
+              >
+                🏆 TOP DE TORNEO
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsRecommended(true)}
+                className={`px-4 py-2 text-xs font-black rounded-lg transition-all ${
+                  isRecommended
+                    ? "bg-blue-600 text-white shadow"
+                    : "bg-slate-800 text-slate-400 hover:text-white"
+                }`}
+              >
+                ⭐ RECOMENDADA / GUÍA
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Tournament */}
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">
-                TORNEO AL QUE PERTENECE *
-              </label>
-              <select
-                value={selectedTournamentId}
-                onChange={(e) => setSelectedTournamentId(e.target.value)}
-                required
-                className="w-full bg-slate-900 border border-slate-700 text-white px-3 py-2.5 rounded-lg text-xs focus:outline-none focus:border-yellow-400 font-bold"
-              >
-                {relevantTournaments.length > 0 ? (
-                  relevantTournaments.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))
-                ) : (
-                  tournaments.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))
-                )}
-              </select>
-            </div>
+            {/* Tournament (only for Top Decks) */}
+            {!isRecommended && (
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">
+                  TORNEO AL QUE PERTENECE *
+                </label>
+                <select
+                  value={selectedTournamentId}
+                  onChange={(e) => setSelectedTournamentId(e.target.value)}
+                  required={!isRecommended}
+                  className="w-full bg-slate-900 border border-slate-700 text-white px-3 py-2.5 rounded-lg text-xs focus:outline-none focus:border-yellow-400 font-bold"
+                >
+                  {relevantTournaments.length > 0 ? (
+                    relevantTournaments.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))
+                  ) : (
+                    tournaments.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))
+                  )}
+                </select>
+              </div>
+            )}
 
-            {/* Position / Top */}
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">
-                POSICIÓN DEL TOP *
-              </label>
-              <select
-                value={placement}
-                onChange={(e) => setPlacement(Number(e.target.value))}
-                className="w-full bg-slate-900 border border-slate-700 text-white px-3 py-2.5 rounded-lg text-xs focus:outline-none focus:border-yellow-400 font-bold"
-              >
-                <option value={1}>🥇 1er Lugar (Campeón)</option>
-                <option value={2}>🥈 Finalista (2do Lugar)</option>
-                <option value={3}>🥉 Top 4 (3er Lugar)</option>
-                <option value={4}>🥉 Top 4 (4to Lugar)</option>
-                <option value={8}>🎖️ Top 8</option>
-              </select>
-            </div>
+            {/* Position / Top (only for Top Decks) */}
+            {!isRecommended && (
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">
+                  POSICIÓN DEL TOP *
+                </label>
+                <select
+                  value={placement}
+                  onChange={(e) => setPlacement(Number(e.target.value))}
+                  className="w-full bg-slate-900 border border-slate-700 text-white px-3 py-2.5 rounded-lg text-xs focus:outline-none focus:border-yellow-400 font-bold"
+                >
+                  <option value={1}>🥇 1er Lugar (Campeón)</option>
+                  <option value={2}>🥈 Finalista (2do Lugar)</option>
+                  <option value={3}>🥉 Top 4 (3er Lugar)</option>
+                  <option value={4}>🥉 Top 4 (4to Lugar)</option>
+                  <option value={8}>🎖️ Top 8</option>
+                </select>
+              </div>
+            )}
 
-            {/* Player Pilot */}
-            <div>
+            {/* Player Pilot / Author */}
+            <div className={isRecommended ? "md:col-span-2" : ""}>
               <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">
-                JUGADOR (PILOTO) *
+                {isRecommended ? "AUTOR / CREADOR DE LA GUÍA *" : "JUGADOR (PILOTO) *"}
               </label>
               <input
                 type="text"
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Ej: Jhanger U."
+                placeholder="Ej: Jhanger U. / Staff Zulia"
                 required
                 className="w-full bg-slate-900 border border-slate-700 text-white px-3.5 py-2.5 rounded-lg text-xs focus:outline-none focus:border-yellow-400"
               />
             </div>
 
             {/* Deck Name */}
-            <div>
+            <div className={isRecommended ? "md:col-span-2" : ""}>
               <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">
                 NOMBRE DEL DECK *
               </label>
@@ -444,7 +494,7 @@ export function AdminDeckBuilder({
                     <p className="text-[11px] text-slate-400">
                       {coverImageUrl
                         ? "Portada establecida. Esta imagen aparecerá en los recuadros de Top Decks y como avatar del ranking."
-                        : "Selecciona una carta del buscador y haz clic en 'Poner como Portada' o súbela desde tu PC."}
+                        : "Haz clic en una carta y pulsa 'Poner como Portada', o sube una imagen personalizada desde tu PC."}
                     </p>
                   </div>
                 </div>
@@ -453,18 +503,17 @@ export function AdminDeckBuilder({
                   <button
                     type="button"
                     onClick={() => coverInputRef.current?.click()}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
+                    className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold transition-colors border border-slate-700 shrink-0"
                   >
-                    <Upload className="w-3.5 h-3.5 text-yellow-400" /> Subir de PC
+                    <Upload className="w-3.5 h-3.5 text-yellow-400" /> Subir Portada de PC
                   </button>
                   {coverImageUrl && (
                     <button
                       type="button"
                       onClick={() => setCoverImageUrl(null)}
-                      className="text-xs text-slate-500 hover:text-red-400 p-2"
-                      title="Quitar portada"
+                      className="text-xs text-red-400 hover:text-red-300 font-bold px-2 py-1"
                     >
-                      <X className="w-4 h-4" />
+                      Quitar
                     </button>
                   )}
                   <input
@@ -478,16 +527,16 @@ export function AdminDeckBuilder({
               </div>
             </div>
 
-            {/* Admin Commentary / Review (Optional) */}
+            {/* Admin Notes */}
             <div className="md:col-span-2 lg:col-span-4">
               <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider flex items-center gap-1.5">
-                <MessageSquare className="w-3.5 h-3.5 text-yellow-400" /> COMENTARIOS / ANÁLISIS DEL ADMIN (OPCIONAL)
+                <MessageSquare className="w-3.5 h-3.5 text-yellow-400" /> NOTAS / ANÁLISIS DEL MAZO (OPCIONAL)
               </label>
               <textarea
-                rows={2}
                 value={adminNotes}
                 onChange={(e) => setAdminNotes(e.target.value)}
-                placeholder="Escribe algún análisis, cartas destacadas, desempeño del jugador en las rondas o notas sobre el torneo..."
+                rows={2}
+                placeholder="Escribe algún análisis, cartas destacadas, match-ups favorables o notas sobre el deck..."
                 className="w-full bg-slate-900 border border-slate-700 text-white px-3.5 py-2 rounded-lg text-xs focus:outline-none focus:border-yellow-400 resize-none"
               />
             </div>
@@ -515,10 +564,10 @@ export function AdminDeckBuilder({
                 <Save className="w-4 h-4" />
               )}
               {savedSuccess
-                ? editingDeckId ? "¡DECK ACTUALIZADO!" : "¡TOP DECK PUBLICADO!"
+                ? editingDeckId ? "¡DECK ACTUALIZADO!" : "¡DECKLIST PUBLICADA!"
                 : isSaving
                 ? "GUARDANDO..."
-                : editingDeckId ? "ACTUALIZAR TOP DECK" : "PUBLICAR TOP DECK"}
+                : editingDeckId ? "ACTUALIZAR DECK" : isRecommended ? "PUBLICAR DECK RECOMENDADO" : "PUBLICAR TOP DECK"}
             </button>
           </div>
         </form>
@@ -526,9 +575,13 @@ export function AdminDeckBuilder({
 
       {/* 3-Col Studio Builder */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Card Preview (span 3) */}
+        {/* Card Preview (span 3) - Fixed on Click */}
         <div className="lg:col-span-3 bg-[#0a0e17] border border-slate-800 rounded-xl p-5 space-y-4">
-          <h3 className="text-xs font-black text-slate-400 tracking-wider uppercase">VISTA PREVIA</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-black text-slate-400 tracking-wider uppercase">VISTA PREVIA DE CARTA</h3>
+            <span className="text-[10px] text-yellow-400 font-bold bg-yellow-400/10 px-2 py-0.5 rounded">FIJA</span>
+          </div>
+
           {selectedCard ? (
             <div className="space-y-3">
               <div className="aspect-[3/4] bg-slate-900 rounded-lg overflow-hidden border border-slate-700 flex items-center justify-center relative">
@@ -577,7 +630,7 @@ export function AdminDeckBuilder({
                   <button
                     type="button"
                     onClick={() => addCard(selectedCard, "side")}
-                    className="col-span-2 bg-slate-800 hover:bg-slate-700 text-purple-300 font-bold text-xs py-1.5 rounded transition-colors border border-purple-500/30"
+                    className="col-span-2 bg-purple-900/60 hover:bg-purple-800 text-purple-200 font-bold text-xs py-2 rounded transition-colors border border-purple-500/30"
                   >
                     + Side Deck
                   </button>
@@ -585,11 +638,15 @@ export function AdminDeckBuilder({
               </div>
             </div>
           ) : (
-            <p className="text-xs text-slate-500 py-6 text-center">Selecciona una carta de los resultados para previsualizarla.</p>
+            <div className="aspect-[3/4] bg-slate-900/40 rounded-lg border border-dashed border-slate-800 flex items-center justify-center text-center p-4">
+              <span className="text-slate-500 text-xs font-medium">
+                Haz clic en una carta de la lista de búsqueda para ver detalles y agregarla al mazo
+              </span>
+            </div>
           )}
         </div>
 
-        {/* Deck Grid (span 6) */}
+        {/* Deck Grid View (span 6) - NO HOVER OVERWRITE */}
         <div className="lg:col-span-6 space-y-4">
           {/* Main Deck */}
           <div className="bg-[#0a0e17] border border-slate-800 rounded-xl p-5">
@@ -618,7 +675,11 @@ export function AdminDeckBuilder({
                   <div
                     key={`${card.id}-${i}`}
                     onClick={() => removeCard(i, "main")}
-                    onMouseEnter={() => setSelectedCard(card)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setSelectedCard(card);
+                    }}
+                    title={`${card.name} (Clic para quitar)`}
                     className="aspect-[3/4] bg-slate-900 rounded overflow-hidden border border-slate-700 hover:border-red-500 cursor-pointer relative group"
                   >
                     <img src={card.image_url} alt={card.name} className="w-full h-full object-cover" />
@@ -661,7 +722,11 @@ export function AdminDeckBuilder({
                   <div
                     key={`${card.id}-${i}`}
                     onClick={() => removeCard(i, "extra")}
-                    onMouseEnter={() => setSelectedCard(card)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setSelectedCard(card);
+                    }}
+                    title={`${card.name} (Clic para quitar)`}
                     className="aspect-[3/4] bg-slate-900 rounded overflow-hidden border border-slate-700 hover:border-red-500 cursor-pointer relative group"
                   >
                     <img src={card.image_url} alt={card.name} className="w-full h-full object-cover" />
@@ -702,7 +767,11 @@ export function AdminDeckBuilder({
                     <div
                       key={`${card.id}-${i}`}
                       onClick={() => removeCard(i, "side")}
-                      onMouseEnter={() => setSelectedCard(card)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setSelectedCard(card);
+                      }}
+                      title={`${card.name} (Clic para quitar)`}
                       className="aspect-[3/4] bg-slate-900 rounded overflow-hidden border border-slate-700 hover:border-red-500 cursor-pointer relative group"
                     >
                       <img src={card.image_url} alt={card.name} className="w-full h-full object-cover" />
@@ -749,115 +818,124 @@ export function AdminDeckBuilder({
               <div
                 key={c.id}
                 onClick={() => setSelectedCard(c)}
-                className={`p-2 rounded-lg border transition-colors flex items-center gap-2 cursor-pointer ${
+                className={`flex items-center gap-2.5 p-2 rounded-lg border transition-all cursor-pointer ${
                   selectedCard?.id === c.id
-                    ? "bg-slate-800 border-yellow-400/80"
-                    : "bg-slate-900/70 border-slate-800 hover:border-slate-700"
+                    ? "bg-yellow-400/10 border-yellow-400"
+                    : "bg-slate-900/60 border-slate-800 hover:border-slate-600"
                 }`}
               >
-                <img src={c.image_url} alt={c.name} className="w-9 h-12 object-cover rounded bg-slate-800 shrink-0" />
+                <div className="w-8 h-11 bg-slate-950 rounded overflow-hidden flex-shrink-0">
+                  {c.image_url ? (
+                    <img src={c.image_url} alt={c.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-slate-800" />
+                  )}
+                </div>
                 <div className="flex-grow min-w-0">
-                  <p className="font-bold text-xs text-white truncate">{c.name}</p>
-                  <p className="text-[9px] text-slate-400 truncate">{c.type || c.id}</p>
+                  <p className="text-xs font-bold text-white truncate">{c.name}</p>
+                  <p className="text-[10px] text-slate-500 truncate">{c.type}</p>
                 </div>
-                <div className="flex flex-col gap-1 shrink-0">
-                  <button
-                    type="button"
-                    title="Agregar a Main Deck"
-                    onClick={(e) => { e.stopPropagation(); addCard(c, "main"); }}
-                    className="w-6 h-5 rounded bg-slate-800 hover:bg-yellow-400 hover:text-slate-950 flex items-center justify-center text-[10px] font-bold text-slate-300 transition-colors"
-                  >
-                    M
-                  </button>
-                  <button
-                    type="button"
-                    title={`Agregar a ${extraTitle}`}
-                    onClick={(e) => { e.stopPropagation(); addCard(c, "extra"); }}
-                    className="w-6 h-5 rounded bg-slate-800 hover:bg-blue-500 hover:text-white flex items-center justify-center text-[10px] font-bold text-blue-300 transition-colors"
-                  >
-                    E
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedCard(c);
+                    addCard(c, "main");
+                  }}
+                  className="bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-[10px] px-2 py-1 rounded shrink-0"
+                >
+                  + Add
+                </button>
               </div>
             ))}
-
-            {searchResults.length === 0 && !isSearching && (
-              <p className="text-slate-500 text-xs text-center py-6">No se encontraron cartas para &quot;{searchQuery}&quot;.</p>
-            )}
           </div>
         </div>
       </div>
 
-      {/* List of Existing Saved Decks with Edit & Delete Buttons */}
-      <div className="bg-[#0a0e17] border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+      {/* Existing Decks List */}
+      <div className="bg-[#0a0e17] border border-slate-800 rounded-xl overflow-hidden">
         <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-          <h2 className="font-black text-white text-lg flex items-center gap-2">
-            <Layers className="w-5 h-5 text-yellow-400" /> Tops & Decks Registrados ({existingDecklists.length})
-          </h2>
+          <div>
+            <h2 className="font-black text-white text-lg">Decklists Publicadas ({existingDecklists.length})</h2>
+            <p className="text-xs text-slate-400">Gestiona, edita o elimina los decks cargados.</p>
+          </div>
         </div>
 
         {existingDecklists.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 font-bold text-sm">
-            No hay decklists registradas todavía. Usa el constructor de arriba para registrar el primer mazo campeón.
+          <div className="p-12 text-center text-slate-500">
+            <Gamepad2 className="w-12 h-12 text-slate-700 mx-auto mb-3" />
+            <p className="font-bold">No hay decklists cargadas aún.</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-800">
-            {existingDecklists.map((deck) => (
-              <div key={deck.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-800/30 transition-colors">
-                {/* Cover Image Thumbnail or Placement */}
-                <div className="w-12 h-16 rounded-lg bg-slate-900 border border-slate-700 overflow-hidden flex items-center justify-center shrink-0 relative">
-                  {deck.coverImageUrl ? (
-                    <img src={deck.coverImageUrl} alt={deck.deckName || "Deck"} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-yellow-400 font-black text-xs">#{deck.placement}</span>
-                  )}
-                  <div className="absolute top-0 right-0 bg-yellow-400 text-slate-950 font-black text-[9px] px-1 rounded-bl">
-                    #{deck.placement}
+            {existingDecklists.map((d) => {
+              const placementLabel =
+                d.isRecommended
+                  ? "⭐ RECOMENDADA"
+                  : d.placement === 1
+                  ? "🥇 1ER LUGAR"
+                  : d.placement === 2
+                  ? "🥈 FINALISTA"
+                  : d.placement <= 4
+                  ? `🥉 TOP ${d.placement}`
+                  : `🎖️ TOP ${d.placement}`;
+
+              return (
+                <div
+                  key={d.id}
+                  className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-slate-800/30 transition-colors"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-12 h-16 bg-slate-900 border border-slate-700 rounded overflow-hidden flex items-center justify-center shrink-0">
+                      {d.coverImageUrl ? (
+                        <img src={d.coverImageUrl} alt={d.deckName || "Deck"} className="w-full h-full object-cover" />
+                      ) : (
+                        <Layers className="w-6 h-6 text-slate-600" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded ${
+                          d.isRecommended
+                            ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
+                            : d.placement === 1
+                            ? "bg-yellow-400 text-slate-950"
+                            : "bg-slate-800 text-slate-300"
+                        }`}>
+                          {placementLabel}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">
+                          {d.tcg.name}
+                        </span>
+                      </div>
+                      <h3 className="font-black text-white text-sm truncate">{d.deckName || "Deck Sin Nombre"}</h3>
+                      <p className="text-xs text-slate-400">
+                        {d.isRecommended ? `Autor: ${d.playerName}` : `Piloto: ${d.playerName} • Torneo: ${d.tournament?.name || "Sin Asignar"}`}
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex-grow min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[9px] font-black px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                      {deck.tcg.name}
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-medium">{deck.tournament.name}</span>
-                  </div>
-                  <p className="font-black text-white text-sm">{deck.deckName}</p>
-                  <p className="text-xs text-slate-400 font-medium">Piloto: {deck.playerName}</p>
-                  {deck.adminNotes && (
-                    <p className="text-[11px] text-yellow-400/80 font-medium mt-1 flex items-center gap-1 line-clamp-1">
-                      <MessageSquare className="w-3 h-3 shrink-0" /> {deck.adminNotes}
-                    </p>
-                  )}
-                </div>
-
-                {/* Edit & Delete Actions */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleStartEditing(deck)}
-                    className="flex items-center gap-1.5 bg-yellow-400/10 hover:bg-yellow-400 text-yellow-400 hover:text-slate-950 border border-yellow-400/30 px-3 py-2 rounded-lg text-xs font-black transition-all"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" /> Editar
-                  </button>
-
-                  <form
-                    action={async () => {
-                      await deleteDecklist(deck.id);
-                    }}
-                  >
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
-                      type="submit"
-                      className="text-slate-600 hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-red-400/10"
+                      type="button"
+                      onClick={() => handleStartEditing(d)}
+                      className="p-2 bg-slate-800 hover:bg-yellow-400 hover:text-slate-950 text-slate-300 rounded-lg transition-colors"
+                      title="Editar Deck"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteDeck(d.id, d.deckName || "Deck")}
+                      className="p-2 bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white rounded-lg transition-colors"
                       title="Eliminar Deck"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
-                  </form>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

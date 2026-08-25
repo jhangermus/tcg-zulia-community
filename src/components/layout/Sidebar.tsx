@@ -1,18 +1,19 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
 import { FaInstagram, FaDiscord, FaWhatsapp, FaYoutube, FaTiktok } from "react-icons/fa";
 import { Cinzel_Decorative, Bangers, Chakra_Petch } from "next/font/google";
 import { prisma } from "@/lib/prisma";
+import { LocationModal } from "./LocationModal";
 
 const ygoFont = Cinzel_Decorative({ weight: "700", subsets: ["latin"] });
 const opFont = Bangers({ weight: "400", subsets: ["latin"] });
 const digiFont = Chakra_Petch({ weight: "700", subsets: ["latin"] });
 
 export async function Sidebar() {
-  // Fetch real tournament counts per TCG
-  const [tournaments, siteConfigs] = await Promise.all([
+  // Fetch real tournament counts per TCG, stores for location modal, and site configs
+  const [tournaments, siteConfigs, stores] = await Promise.all([
     prisma.tournament.findMany({ select: { tcg: { select: { slug: true } } } }),
     prisma.siteConfig.findMany(),
+    prisma.localStore.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   const socials: Record<string, string> = {
@@ -35,7 +36,7 @@ export async function Sidebar() {
 
   return (
     <aside className="w-72 bg-[#05080f] text-white flex-shrink-0 hidden lg:flex flex-col justify-between border-r border-slate-800/80 h-screen sticky top-0 overflow-hidden select-none p-5">
-      {/* 1. TOP: Logo & Location */}
+      {/* 1. TOP: Logo & Location Modal */}
       <div className="space-y-3 shrink-0">
         <Link href="/" className="group block">
           <div className="flex items-center gap-2">
@@ -46,17 +47,11 @@ export async function Sidebar() {
           </div>
         </Link>
 
-        {/* Location Box (Chamfered) */}
-        <div className="flex items-center gap-3 bg-[#0a0f1d] p-2.5 border border-slate-700 clip-chamfer-tr hover:border-slate-500 transition-colors shadow-sm">
-          <MapPin className="w-4 h-4 text-slate-200 shrink-0" />
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-black text-white tracking-wider leading-tight">MARACAIBO</span>
-            <span className="text-[10px] text-slate-200 font-bold tracking-tight leading-tight">ZULIA, VENEZUELA</span>
-          </div>
-        </div>
+        {/* Location Box with interactive Google Maps Modal */}
+        <LocationModal stores={stores} />
       </div>
 
-      {/* 2. JUEGOS PRINCIPALES (Grandes y Tácticos) */}
+      {/* 2. JUEGOS PRINCIPALES */}
       <div className="space-y-2 py-1 shrink-0">
         <h3 className="text-xs font-black text-slate-200 tracking-widest uppercase">
           JUEGOS PRINCIPALES
@@ -157,7 +152,7 @@ export async function Sidebar() {
         </div>
       </div>
 
-      {/* 3. SÍGUENOS: Tarjetas Completas Una Encima de Otra (Sin Dejar Espacio Vacío) */}
+      {/* 3. SÍGUENOS: Tarjetas Completas */}
       <div className="space-y-2 py-1 shrink-0">
         <h3 className="text-xs font-black text-slate-200 tracking-widest uppercase">
           SÍGUENOS

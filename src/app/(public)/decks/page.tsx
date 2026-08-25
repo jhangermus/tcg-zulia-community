@@ -7,6 +7,7 @@ export default async function DecksPage() {
   const [tcgs, dbDecklists] = await Promise.all([
     prisma.tcg.findMany({ where: { status: "ACTIVE" }, orderBy: { name: "asc" } }),
     prisma.decklist.findMany({
+      where: { isRecommended: false },
       include: { tournament: true, tcg: true },
       orderBy: [{ placement: "asc" }, { createdAt: "desc" }],
     }),

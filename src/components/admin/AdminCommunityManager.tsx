@@ -39,6 +39,7 @@ export function AdminCommunityManager({ stores, groups, socials }: AdminCommunit
   // --- STORE FORM STATE ---
   const [storeName, setStoreName] = useState("");
   const [storeLocation, setStoreLocation] = useState("");
+  const [storeMapsUrl, setStoreMapsUrl] = useState("");
   const [storePhone, setStorePhone] = useState("");
   const [storeInstagram, setStoreInstagram] = useState("");
   const [storeSchedule, setStoreSchedule] = useState("");
@@ -95,6 +96,7 @@ export function AdminCommunityManager({ stores, groups, socials }: AdminCommunit
       const formData = new FormData();
       formData.append("name", storeName);
       formData.append("location", storeLocation);
+      formData.append("mapsUrl", storeMapsUrl);
       formData.append("phone", storePhone);
       formData.append("instagramUrl", storeInstagram);
       formData.append("schedule", storeSchedule);
@@ -106,6 +108,7 @@ export function AdminCommunityManager({ stores, groups, socials }: AdminCommunit
       await createLocalStore(formData);
       setStoreName("");
       setStoreLocation("");
+      setStoreMapsUrl("");
       setStorePhone("");
       setStoreInstagram("");
       setStoreSchedule("");
@@ -251,6 +254,19 @@ export function AdminCommunityManager({ stores, groups, socials }: AdminCommunit
                     value={storeLocation}
                     onChange={(e) => setStoreLocation(e.target.value)}
                     placeholder="Ej: CC Galerías Mall, Nivel 2, Local 45"
+                    className="w-full bg-slate-900 border border-slate-700 text-white px-3.5 py-2 rounded-lg text-xs focus:outline-none focus:border-yellow-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">
+                    ENLACE DE GOOGLE MAPS (OPCIONAL)
+                  </label>
+                  <input
+                    type="url"
+                    value={storeMapsUrl}
+                    onChange={(e) => setStoreMapsUrl(e.target.value)}
+                    placeholder="https://maps.app.goo.gl/... o https://google.com/maps/..."
                     className="w-full bg-slate-900 border border-slate-700 text-white px-3.5 py-2 rounded-lg text-xs focus:outline-none focus:border-yellow-400"
                   />
                 </div>

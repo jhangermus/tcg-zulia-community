@@ -264,10 +264,11 @@ export async function deleteTournament(id: string) {
 // --- DECKLIST ACTIONS ---
 
 const DecklistSchema = z.object({
-  playerName: z.string().min(1, "El nombre del jugador es requerido"),
+  playerName: z.string().min(1, "El nombre del jugador/autor es requerido"),
   deckName: z.string().min(1, "El nombre del deck es requerido"),
-  placement: z.coerce.number().int().min(1),
-  tournamentId: z.string().min(1, "Selecciona un torneo"),
+  placement: z.coerce.number().int().default(0),
+  tournamentId: z.string().optional().nullable(),
+  isRecommended: z.coerce.boolean().default(false),
   tcgId: z.string().min(1, "Selecciona un TCG"),
   deckData: z.string().min(2),
   adminNotes: z.string().optional(),
@@ -276,11 +277,16 @@ const DecklistSchema = z.object({
 
 export async function createDecklist(formData: FormData) {
   await requireAdmin();
+  const isRecommended = formData.get("isRecommended") === "true" || formData.get("isRecommended") === "on";
+  const tournamentIdRaw = formData.get("tournamentId") as string;
+  const tournamentId = tournamentIdRaw && tournamentIdRaw.trim() !== "" ? tournamentIdRaw.trim() : null;
+
   const validated = DecklistSchema.safeParse({
     playerName: formData.get("playerName"),
     deckName: formData.get("deckName"),
-    placement: formData.get("placement"),
-    tournamentId: formData.get("tournamentId"),
+    placement: formData.get("placement") || 0,
+    tournamentId: tournamentId,
+    isRecommended: isRecommended,
     tcgId: formData.get("tcgId"),
     deckData: formData.get("deckData"),
     adminNotes: formData.get("adminNotes") ? String(formData.get("adminNotes")) : undefined,
@@ -291,10 +297,17 @@ export async function createDecklist(formData: FormData) {
     return { error: "Datos inválidos" };
   }
 
-  await prisma.decklist.create({ data: validated.data });
+  await prisma.decklist.create({
+    data: {
+      ...validated.data,
+      tournamentId: validated.data.tournamentId || undefined,
+    },
+  });
+
   revalidatePath("/admin/decks");
   revalidatePath("/admin/torneos");
   revalidatePath("/decks");
+  revalidatePath("/recomendadas");
   revalidatePath("/torneos");
   revalidatePath("/ranking");
   revalidatePath("/");
@@ -306,11 +319,16 @@ export async function updateDecklist(formData: FormData) {
   const id = formData.get("id") as string;
   if (!id) return { error: "ID no proporcionado" };
 
+  const isRecommended = formData.get("isRecommended") === "true" || formData.get("isRecommended") === "on";
+  const tournamentIdRaw = formData.get("tournamentId") as string;
+  const tournamentId = tournamentIdRaw && tournamentIdRaw.trim() !== "" ? tournamentIdRaw.trim() : null;
+
   const validated = DecklistSchema.safeParse({
     playerName: formData.get("playerName"),
     deckName: formData.get("deckName"),
-    placement: formData.get("placement"),
-    tournamentId: formData.get("tournamentId"),
+    placement: formData.get("placement") || 0,
+    tournamentId: tournamentId,
+    isRecommended: isRecommended,
     tcgId: formData.get("tcgId"),
     deckData: formData.get("deckData"),
     adminNotes: formData.get("adminNotes") ? String(formData.get("adminNotes")) : undefined,
@@ -323,12 +341,16 @@ export async function updateDecklist(formData: FormData) {
 
   await prisma.decklist.update({
     where: { id },
-    data: validated.data,
+    data: {
+      ...validated.data,
+      tournamentId: validated.data.tournamentId || null,
+    },
   });
 
   revalidatePath("/admin/decks");
   revalidatePath("/admin/torneos");
   revalidatePath("/decks");
+  revalidatePath("/recomendadas");
   revalidatePath("/torneos");
   revalidatePath("/ranking");
   revalidatePath("/");
@@ -340,6 +362,7 @@ export async function deleteDecklist(id: string) {
   await prisma.decklist.delete({ where: { id } });
   revalidatePath("/admin/decks");
   revalidatePath("/decks");
+  revalidatePath("/recomendadas");
   revalidatePath("/ranking");
   revalidatePath("/");
 }
@@ -349,6 +372,7 @@ export async function deleteDecklist(id: string) {
 const LocalStoreSchema = z.object({
   name: z.string().min(1, "Nombre de la tienda requerido"),
   location: z.string().min(1, "Ubicación requerida"),
+  mapsUrl: z.string().optional(),
   description: z.string().optional(),
   phone: z.string().optional(),
   instagramUrl: z.string().optional(),
@@ -361,6 +385,7 @@ export async function createLocalStore(formData: FormData) {
   const validated = LocalStoreSchema.safeParse({
     name: formData.get("name"),
     location: formData.get("location"),
+    mapsUrl: formData.get("mapsUrl") || undefined,
     description: formData.get("description") || undefined,
     phone: formData.get("phone") || undefined,
     instagramUrl: formData.get("instagramUrl") || undefined,
