@@ -53,7 +53,7 @@ export default async function RecomendadasPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
         <div>
           <h1 className="text-4xl font-black italic tracking-tighter text-white">
-            DECKLISTS <span className="text-yellow-400">RECOMENDADAS</span>
+            RECOMENDACIONES <span className="text-yellow-400">DE DECKS</span>
           </h1>
           <p className="text-slate-300 text-sm font-medium mt-1">
             Guías estratégicas, listas optimizadas y recomendaciones de la comunidad y jueces del Zulia para cada TCG.

@@ -4,9 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   Sparkles, Layers, Search, Eye, Calendar, User,
-  MessageSquare, Star, ArrowRight, Shield, X
+  MessageSquare, Star, ArrowRight, Shield, X, ZoomIn
 } from "lucide-react";
 import { DeckCardItem } from "./PublicDecksClient";
+import { CardZoomModal } from "./CardZoomModal";
 
 export interface RecommendedDeckItem {
   id: string;
@@ -38,6 +39,7 @@ export function PublicRecommendedDecksClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [activeModalDeck, setActiveModalDeck] = useState<RecommendedDeckItem | null>(null);
   const [hoveredCard, setHoveredCard] = useState<DeckCardItem | null>(null);
+  const [zoomedCard, setZoomedCard] = useState<DeckCardItem | null>(null);
 
   // Filter decks
   const filteredDecks = decks.filter((deck) => {
@@ -265,10 +267,23 @@ export function PublicRecommendedDecksClient({
                 <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">CARTA SELECCIONADA</h4>
                 {hoveredCard ? (
                   <div className="space-y-3">
-                    <div className="aspect-[3/4] bg-slate-950 border border-slate-700 rounded-sm overflow-hidden flex items-center justify-center">
-                      <img src={hoveredCard.image_url} alt={hoveredCard.name} className="w-full h-full object-contain" />
+                    <div
+                      onClick={() => setZoomedCard(hoveredCard)}
+                      title="Clic para ampliar y leer carta"
+                      className="aspect-[3/4] bg-slate-950 border border-slate-700 rounded-sm overflow-hidden flex items-center justify-center cursor-pointer hover:border-yellow-400 transition-all group relative"
+                    >
+                      <img src={hoveredCard.image_url} alt={hoveredCard.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white text-xs font-black">
+                        <ZoomIn className="w-6 h-6 text-yellow-400" />
+                        <span>AMPLIAR CARTA</span>
+                      </div>
                     </div>
-                    <p className="text-sm font-black text-white">{hoveredCard.name}</p>
+                    <div>
+                      <p className="text-sm font-black text-white">{hoveredCard.name}</p>
+                      <p className="text-[10px] text-yellow-400 font-bold mt-0.5 flex items-center gap-1">
+                        <ZoomIn className="w-3 h-3" /> Clic para zoom completo
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-xs text-slate-500">Haz clic en cualquier carta para ampliar</p>
@@ -286,11 +301,17 @@ export function PublicRecommendedDecksClient({
                     {activeModalDeck.deckData.main.map((card, i) => (
                       <div
                         key={`${card.id}-${i}`}
-                        onClick={() => setHoveredCard(card)}
-                        title={card.name}
-                        className="aspect-[3/4] bg-slate-950 border border-slate-700 hover:border-yellow-400 rounded-sm overflow-hidden cursor-pointer group"
+                        onClick={() => {
+                          setHoveredCard(card);
+                          setZoomedCard(card);
+                        }}
+                        title={`${card.name} (Clic para ampliar)`}
+                        className="aspect-[3/4] bg-slate-950 border border-slate-700 hover:border-yellow-400 rounded-sm overflow-hidden cursor-pointer group relative"
                       >
                         <img src={card.image_url} alt={card.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                        <div className="absolute inset-0 bg-yellow-400/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <ZoomIn className="w-4 h-4 text-yellow-400 drop-shadow" />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -306,11 +327,17 @@ export function PublicRecommendedDecksClient({
                       {activeModalDeck.deckData.extra.map((card, i) => (
                         <div
                           key={`${card.id}-${i}`}
-                          onClick={() => setHoveredCard(card)}
-                          title={card.name}
-                          className="aspect-[3/4] bg-slate-950 border border-blue-700 hover:border-blue-400 rounded-sm overflow-hidden cursor-pointer group"
+                          onClick={() => {
+                            setHoveredCard(card);
+                            setZoomedCard(card);
+                          }}
+                          title={`${card.name} (Clic para ampliar)`}
+                          className="aspect-[3/4] bg-slate-950 border border-blue-700 hover:border-blue-400 rounded-sm overflow-hidden cursor-pointer group relative"
                         >
                           <img src={card.image_url} alt={card.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                          <div className="absolute inset-0 bg-blue-400/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                            <ZoomIn className="w-4 h-4 text-blue-400 drop-shadow" />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -327,11 +354,17 @@ export function PublicRecommendedDecksClient({
                       {activeModalDeck.deckData.side.map((card, i) => (
                         <div
                           key={`${card.id}-${i}`}
-                          onClick={() => setHoveredCard(card)}
-                          title={card.name}
-                          className="aspect-[3/4] bg-slate-950 border border-purple-700 hover:border-purple-400 rounded-sm overflow-hidden cursor-pointer group"
+                          onClick={() => {
+                            setHoveredCard(card);
+                            setZoomedCard(card);
+                          }}
+                          title={`${card.name} (Clic para ampliar)`}
+                          className="aspect-[3/4] bg-slate-950 border border-purple-700 hover:border-purple-400 rounded-sm overflow-hidden cursor-pointer group relative"
                         >
                           <img src={card.image_url} alt={card.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                          <div className="absolute inset-0 bg-purple-400/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                            <ZoomIn className="w-4 h-4 text-purple-400 drop-shadow" />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -342,6 +375,9 @@ export function PublicRecommendedDecksClient({
           </div>
         </div>
       )}
+
+      {/* Card Zoom Modal */}
+      <CardZoomModal card={zoomedCard} onClose={() => setZoomedCard(null)} />
     </div>
   );
 }

@@ -3,14 +3,18 @@
 import { useState, useEffect, useRef } from "react";
 import {
   PenTool, Search, Plus, Trash2, Save,
-  Layers, Sparkles, RefreshCw, Check, Shield, Gamepad2, MessageSquare, Star, Edit3, X, Upload, Image as ImageIcon, Award
+  Layers, Sparkles, RefreshCw, Check, Shield, Gamepad2, MessageSquare, Star, Edit3, X, Upload, Image as ImageIcon, Award, ZoomIn
 } from "lucide-react";
 import { createDecklist, updateDecklist, deleteDecklist } from "@/lib/actions";
+import { CardZoomModal } from "@/components/decks/CardZoomModal";
 
 interface Card {
   id: string | number;
   name: string;
   type?: string;
+  frameType?: string;
+  category?: string;
+  card_type?: string;
   image_url: string;
   slot?: "main" | "extra" | "side" | "leader" | "egg";
 }
@@ -89,6 +93,7 @@ export function AdminDeckBuilder({
   const [searchResults, setSearchResults] = useState<Card[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [zoomedCard, setZoomedCard] = useState<Card | null>(null);
 
   // Saving state
   const [isSaving, setIsSaving] = useState(false);
@@ -155,13 +160,75 @@ export function AdminDeckBuilder({
     performSearch(searchQuery, tcgSlug);
   };
 
+  // Helper function to automatically group identical cards and order by logical TCG category
+  const sortAndGroupCards = (cards: Card[], slug: string): Card[] => {
+    return [...cards].sort((a, b) => {
+      if (a.name === b.name) return 0;
+
+      const aName = a.name.toLowerCase();
+      const bName = b.name.toLowerCase();
+
+      const aType = (a.type || a.frameType || a.category || a.card_type || "").toLowerCase();
+      const bType = (b.type || b.frameType || b.category || b.card_type || "").toLowerCase();
+
+      // Yu-Gi-Oh!
+      if (slug.includes("yug") || slug.includes("ygo")) {
+        const getPriority = (t: string) => {
+          if (t.includes("monster") || t.includes("normal") || t.includes("effect") || t.includes("ritual")) return 1;
+          if (t.includes("spell") || t.includes("magia")) return 2;
+          if (t.includes("trap") || t.includes("trampa")) return 3;
+          if (t.includes("fusion") || t.includes("synchro") || t.includes("xyz") || t.includes("link")) return 4;
+          return 5;
+        };
+        const pA = getPriority(aType);
+        const pB = getPriority(bType);
+        if (pA !== pB) return pA - pB;
+        return aName.localeCompare(bName);
+      }
+
+      // One Piece
+      if (slug.includes("one") || slug.includes("piece") || slug.includes("op")) {
+        const getPriority = (t: string) => {
+          if (t.includes("leader") || t.includes("líder")) return 1;
+          if (t.includes("character") || t.includes("personaje")) return 2;
+          if (t.includes("event") || t.includes("evento")) return 3;
+          if (t.includes("stage") || t.includes("escenario")) return 4;
+          return 5;
+        };
+        const pA = getPriority(aType);
+        const pB = getPriority(bType);
+        if (pA !== pB) return pA - pB;
+        return aName.localeCompare(bName);
+      }
+
+      // Digimon
+      if (slug.includes("digi")) {
+        const getPriority = (t: string) => {
+          if (t.includes("egg") || t.includes("huevo")) return 1;
+          if (t.includes("digimon")) return 2;
+          if (t.includes("tamer")) return 3;
+          if (t.includes("option")) return 4;
+          return 5;
+        };
+        const pA = getPriority(aType);
+        const pB = getPriority(bType);
+        if (pA !== pB) return pA - pB;
+        return aName.localeCompare(bName);
+      }
+
+      // Fallback: group by type then name
+      if (aType !== bType) return aType.localeCompare(bType);
+      return aName.localeCompare(bName);
+    });
+  };
+
   const addCard = (card: Card, target: "main" | "extra" | "side" = "main") => {
     if (target === "extra") {
-      setExtraDeck((prev) => [...prev, card]);
+      setExtraDeck((prev) => sortAndGroupCards([...prev, card], tcgSlug));
     } else if (target === "side") {
-      setSideDeck((prev) => [...prev, card]);
+      setSideDeck((prev) => sortAndGroupCards([...prev, card], tcgSlug));
     } else {
-      setMainDeck((prev) => [...prev, card]);
+      setMainDeck((prev) => sortAndGroupCards([...prev, card], tcgSlug));
     }
   };
 
@@ -939,6 +1006,9 @@ export function AdminDeckBuilder({
           </div>
         )}
       </div>
+
+      {/* Card Zoom Modal */}
+      <CardZoomModal card={zoomedCard} onClose={() => setZoomedCard(null)} />
     </div>
   );
 }

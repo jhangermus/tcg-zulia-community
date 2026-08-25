@@ -9,12 +9,22 @@ export default async function DecksPage() {
     prisma.decklist.findMany({
       where: { isRecommended: false },
       include: { tournament: true, tcg: true },
-      orderBy: [{ placement: "asc" }, { createdAt: "desc" }],
+      orderBy: { createdAt: "desc" },
     }),
   ]);
 
+  // Sort decks primarily by tournament date (most recent tournament first), then by placement (1st, 2nd, 3rd...)
+  const sortedDecklists = [...dbDecklists].sort((a, b) => {
+    const timeA = a.tournament?.date ? new Date(a.tournament.date).getTime() : new Date(a.createdAt).getTime();
+    const timeB = b.tournament?.date ? new Date(b.tournament.date).getTime() : new Date(b.createdAt).getTime();
+    if (timeB !== timeA) {
+      return timeB - timeA; // Torneo más reciente primero
+    }
+    return (a.placement || 99) - (b.placement || 99); // 1er lugar, 2do lugar...
+  });
+
   // Format real DB decklists
-  const decks: DecklistItem[] = dbDecklists.map((d) => {
+  const decks: DecklistItem[] = sortedDecklists.map((d) => {
     let parsedData = { main: [], extra: [], side: [] };
     try {
       if (typeof d.deckData === "string") {

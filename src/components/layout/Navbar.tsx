@@ -9,7 +9,7 @@ const NAV_LINKS = [
   { href: "/", label: "INICIO" },
   { href: "/torneos", label: "TORNEOS" },
   { href: "/decks", label: "TOPS" },
-  { href: "/recomendadas", label: "RECOMENDADAS" },
+  { href: "/recomendadas", label: "RECOMENDACIONES" },
   { href: "/ranking", label: "RANKING" },
   { href: "/noticias", label: "NOTICIAS" },
   { href: "/tienda", label: "TIENDA" },

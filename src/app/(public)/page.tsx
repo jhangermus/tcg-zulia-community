@@ -17,9 +17,10 @@ export default async function Home() {
       orderBy: { date: "desc" },
     }),
     prisma.decklist.findMany({
-      include: { tcg: true },
-      orderBy: [{ placement: "asc" }, { createdAt: "desc" }],
-      take: 3,
+      where: { isRecommended: false, placement: { gt: 0 } },
+      include: { tcg: true, tournament: true },
+      orderBy: { createdAt: "desc" },
+      take: 6,
     }),
     prisma.news.findMany({
       where: { published: true },
@@ -241,14 +242,22 @@ export default async function Home() {
 
             {topDecks.length > 0 ? (
               <div className="grid grid-cols-3 gap-3.5">
-                {topDecks.map((deck, i) => {
-                  const cover = getDeckCover(deck);
-                  return (
-                    <Link
-                      key={deck.id}
-                      href="/decks"
-                      className="flex flex-col items-center group cursor-pointer"
-                    >
+                {[...topDecks]
+                  .sort((a, b) => {
+                    const timeA = a.tournament?.date ? new Date(a.tournament.date).getTime() : new Date(a.createdAt).getTime();
+                    const timeB = b.tournament?.date ? new Date(b.tournament.date).getTime() : new Date(b.createdAt).getTime();
+                    if (timeB !== timeA) return timeB - timeA;
+                    return (a.placement || 99) - (b.placement || 99);
+                  })
+                  .slice(0, 3)
+                  .map((deck, i) => {
+                    const cover = getDeckCover(deck);
+                    return (
+                      <Link
+                        key={deck.id}
+                        href="/decks"
+                        className="flex flex-col items-center group cursor-pointer"
+                      >
                       {/* Tactical Chamfered 3:4 Card Container */}
                       <div className="w-full aspect-[3/4] bg-[#0c1220] border border-slate-700 group-hover:border-yellow-400 transition-all mb-2.5 relative overflow-hidden flex items-center justify-center shadow-lg clip-chamfer-tr">
                         {cover ? (

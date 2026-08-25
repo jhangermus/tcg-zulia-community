@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Trophy, Layers, Sparkles, Shield, X, Eye, Calendar, User, MapPin, MessageSquare } from "lucide-react";
+import { Trophy, Layers, Sparkles, Shield, X, Eye, Calendar, User, MapPin, MessageSquare, ZoomIn } from "lucide-react";
+import { CardZoomModal } from "./CardZoomModal";
 
 export interface DeckCardItem {
   id: string | number;
@@ -37,6 +38,7 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
   const [selectedTcg, setSelectedTcg] = useState<string>("ALL");
   const [activeModalDeck, setActiveModalDeck] = useState<DecklistItem | null>(null);
   const [hoveredCard, setHoveredCard] = useState<DeckCardItem | null>(null);
+  const [zoomedCard, setZoomedCard] = useState<DeckCardItem | null>(null);
 
   // Filter decks
   const filteredDecks = decks.filter((deck) => {
@@ -272,10 +274,17 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
                       <div
                         key={`${card.id}-${i}`}
                         onMouseEnter={() => setHoveredCard(card)}
-                        onClick={() => setHoveredCard(card)}
-                        className="aspect-[3/4] bg-slate-900 rounded-lg overflow-hidden border border-slate-800 hover:border-yellow-400 transition-all cursor-pointer shadow hover:scale-105"
+                        onClick={() => {
+                          setHoveredCard(card);
+                          setZoomedCard(card);
+                        }}
+                        title={`${card.name} (Clic para ampliar)`}
+                        className="aspect-[3/4] bg-slate-900 rounded-lg overflow-hidden border border-slate-800 hover:border-yellow-400 transition-all cursor-pointer shadow hover:scale-105 group relative"
                       >
                         <img src={card.image_url} alt={card.name} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-yellow-400/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <ZoomIn className="w-4 h-4 text-yellow-400 drop-shadow" />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -298,10 +307,17 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
                         <div
                           key={`${card.id}-${i}`}
                           onMouseEnter={() => setHoveredCard(card)}
-                          onClick={() => setHoveredCard(card)}
-                          className="aspect-[3/4] bg-slate-900 rounded-lg overflow-hidden border border-slate-800 hover:border-blue-400 transition-all cursor-pointer shadow hover:scale-105"
+                          onClick={() => {
+                            setHoveredCard(card);
+                            setZoomedCard(card);
+                          }}
+                          title={`${card.name} (Clic para ampliar)`}
+                          className="aspect-[3/4] bg-slate-900 rounded-lg overflow-hidden border border-slate-800 hover:border-blue-400 transition-all cursor-pointer shadow hover:scale-105 group relative"
                         >
                           <img src={card.image_url} alt={card.name} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-blue-400/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                            <ZoomIn className="w-4 h-4 text-blue-400 drop-shadow" />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -319,10 +335,17 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
                         <div
                           key={`${card.id}-${i}`}
                           onMouseEnter={() => setHoveredCard(card)}
-                          onClick={() => setHoveredCard(card)}
-                          className="aspect-[3/4] bg-slate-900 rounded-lg overflow-hidden border border-slate-800 hover:border-purple-400 transition-all cursor-pointer shadow hover:scale-105"
+                          onClick={() => {
+                            setHoveredCard(card);
+                            setZoomedCard(card);
+                          }}
+                          title={`${card.name} (Clic para ampliar)`}
+                          className="aspect-[3/4] bg-slate-900 rounded-lg overflow-hidden border border-slate-800 hover:border-purple-400 transition-all cursor-pointer shadow hover:scale-105 group relative"
                         >
                           <img src={card.image_url} alt={card.name} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-purple-400/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                            <ZoomIn className="w-4 h-4 text-purple-400 drop-shadow" />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -334,17 +357,27 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
               <div className="lg:col-span-4 bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col items-center justify-center sticky top-0">
                 {hoveredCard ? (
                   <div className="space-y-3 text-center w-full">
-                    <div className="aspect-[3/4] max-w-[240px] mx-auto bg-slate-950 rounded-xl overflow-hidden border border-slate-700 shadow-2xl">
-                      <img src={hoveredCard.image_url} alt={hoveredCard.name} className="w-full h-full object-contain" />
+                    <div
+                      onClick={() => setZoomedCard(hoveredCard)}
+                      title="Clic para ampliar y leer carta"
+                      className="aspect-[3/4] max-w-[240px] mx-auto bg-slate-950 rounded-xl overflow-hidden border border-slate-700 shadow-2xl cursor-pointer hover:border-yellow-400 transition-all group relative"
+                    >
+                      <img src={hoveredCard.image_url} alt={hoveredCard.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white text-xs font-black">
+                        <ZoomIn className="w-6 h-6 text-yellow-400" />
+                        <span>AMPLIAR CARTA</span>
+                      </div>
                     </div>
                     <div>
                       <h5 className="font-black text-sm text-white">{hoveredCard.name}</h5>
-                      <p className="text-[10px] text-slate-500 font-bold mt-0.5">ID: {hoveredCard.id}</p>
+                      <p className="text-[10px] text-yellow-400 font-bold mt-0.5 flex items-center justify-center gap-1">
+                        <ZoomIn className="w-3 h-3" /> Clic en la carta para zoom completo
+                      </p>
                     </div>
                   </div>
                 ) : (
                   <p className="text-xs text-slate-500 text-center py-12">
-                    Pasa el cursor sobre cualquier carta para verla en tamaño completo.
+                    Pasa el cursor o haz clic en cualquier carta para verla en detalle.
                   </p>
                 )}
               </div>
@@ -352,6 +385,9 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
           </div>
         </div>
       )}
+
+      {/* Full Resolution Zoom Modal */}
+      <CardZoomModal card={zoomedCard} onClose={() => setZoomedCard(null)} />
     </div>
   );
 }
