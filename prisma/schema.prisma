@@ -57,7 +57,8 @@ model Tournament {
   location    String?
   prize       String?
   photoUrl    String?  // Foto del torneo / foto del podio / campeón
-  bannerUrl   String?  // Imagen banner torneo (fondo de la card del torneo)
+  bannerUrl      String?  // Imagen banner torneo (fondo de la card del torneo)
+  bannerPosition String?  @default("50") // Posición vertical del banner en % (0=arriba, 50=centro, 100=abajo)
   tcgId       String
   tcg         Tcg      @relation(fields: [tcgId], references: [id])
   participantsCount Int @default(0)

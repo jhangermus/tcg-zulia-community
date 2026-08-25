@@ -16,6 +16,7 @@ export interface AdminTournamentItem {
   prize?: string | null;
   photoUrl?: string | null;
   bannerUrl?: string | null;
+  bannerPosition?: string | null;
   participantsCount: number;
   status: string;
   tcgId: string;
@@ -47,6 +48,7 @@ export function AdminTournamentManager({
   const [editingItem, setEditingItem] = useState<AdminTournamentItem | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [bannerPosition, setBannerPosition] = useState<string>("50");
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
@@ -84,6 +86,7 @@ export function AdminTournamentManager({
     setEditingItem(t);
     setPhotoPreview(t.photoUrl || null);
     setBannerPreview(t.bannerUrl || null);
+    setBannerPosition(t.bannerPosition || "50");
     formTopRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -91,6 +94,7 @@ export function AdminTournamentManager({
     setEditingItem(null);
     setPhotoPreview(null);
     setBannerPreview(null);
+    setBannerPosition("50");
   };
 
   const handleDelete = async (id: string, name: string) => {
@@ -355,14 +359,55 @@ export function AdminTournamentManager({
                 </div>
               </div>
 
-              <div>
-                <input
-                  name="bannerUrl"
-                  value={bannerPreview || ""}
-                  onChange={(e) => setBannerPreview(e.target.value)}
-                  placeholder="O pega una URL externa para el banner (https://...)"
-                  className="w-full bg-slate-950 border border-slate-800 text-white px-3 py-1.5 rounded text-xs focus:outline-none focus:border-blue-400"
-                />
+              <div className="space-y-3">
+                <div>
+                  <input
+                    name="bannerUrl"
+                    value={bannerPreview || ""}
+                    onChange={(e) => setBannerPreview(e.target.value)}
+                    placeholder="O pega una URL externa para el banner (https://...)"
+                    className="w-full bg-slate-950 border border-slate-800 text-white px-3 py-1.5 rounded text-xs focus:outline-none focus:border-blue-400"
+                  />
+                </div>
+
+                {/* Position Slider - only show when there's a banner */}
+                {bannerPreview && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                        ↕ POSICIÓN VERTICAL DEL BANNER
+                      </label>
+                      <span className="text-[11px] text-blue-400 font-black">
+                        {Number(bannerPosition) === 0 ? "Arriba ▲" : Number(bannerPosition) === 100 ? "Abajo ▼" : `${bannerPosition}%`}
+                      </span>
+                    </div>
+                    <input
+                      name="bannerPosition"
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={bannerPosition}
+                      onChange={(e) => setBannerPosition(e.target.value)}
+                      className="w-full accent-blue-400 cursor-pointer"
+                    />
+                    {/* Live mini-preview of the position */}
+                    <div className="relative w-full h-20 rounded overflow-hidden border border-slate-700 bg-slate-950">
+                      <img
+                        src={bannerPreview}
+                        alt="Preview posición"
+                        className="w-full h-full object-cover"
+                        style={{ objectPosition: `center ${bannerPosition}%` }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#04070d]/80 via-transparent to-transparent" />
+                      <span className="absolute bottom-1 right-2 text-[10px] text-slate-300 font-bold">Vista previa</span>
+                    </div>
+                  </div>
+                )}
+                {/* Hidden input when no banner (keeps default) */}
+                {!bannerPreview && (
+                  <input name="bannerPosition" type="hidden" value={bannerPosition} />
+                )}
               </div>
             </div>
           </div>
