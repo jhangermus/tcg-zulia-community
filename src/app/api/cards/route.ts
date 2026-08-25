@@ -97,6 +97,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ cards });
     }
 
+    // List of known Digimon Eggs / Tamas
+    const DIGI_EGGS_NAMES = new Set([
+      "tsumemon", "koromon", "gigimon", "tanemon", "tokomon", "demiveemon", "upamon", "poromon",
+      "mochimon", "motimon", "nyaromon", "pagumon", "yokomon", "pyocomon", "bukamon", "minomon",
+      "yaamon", "hopmon", "caprimon", "chibimon", "gummymon", "chocomon", "kokomon", "pickmon",
+      "dorimon", "kyokyomon", "wanyamon", "cupimon", "pinamon", "puroromon", "torikaraballmon",
+      "bebydomon", "kyaromon", "frimon", "viximon", "sakuttomon", "kakkinmon", "sunamon", "goromon",
+      "bibimon", "bosamon", "bowmon", "chapmon", "dokimon", "leafmon", "zurumon", "botamon",
+      "punimon", "poyomon", "pabumon", "jyarimon", "cocomon", "popomon", "pipimon", "ketomon",
+      "fufumon", "bubbmon", "puwamon", "dodomon", "kuramon", "pafumon", "puttimon", "pichimon",
+      "petitmon", "yukimibotamon", "zerimon", "conomon", "kiimon", "bombmon", "tsunomon",
+      "gurimon", "yarimon", "monimon", "kodokugumon"
+    ]);
+
     // 2. DIGIMON (Local Database)
     if (game === 'digimon') {
       const allCards = getDigimonCards();
@@ -110,11 +124,22 @@ export async function GET(request: Request) {
         .slice(0, 20);
 
       const cards: NormalizedCard[] = filtered.map((c: any) => {
-        const isEgg = c.card_type === 'egg' || c.type?.toLowerCase().includes('egg');
+        const nameLower = (c.name || '').toLowerCase().trim();
+        const typeLower = (c.type || c.card_type || '').toLowerCase();
+        const idStr = String(c.id || '');
+        const isEgg =
+          c.card_type === 'egg' ||
+          typeLower.includes('egg') ||
+          typeLower.includes('tama') ||
+          typeLower.includes('in-training') ||
+          DIGI_EGGS_NAMES.has(nameLower) ||
+          DIGI_EGGS_NAMES.has(nameLower.split(' ')[0]) ||
+          /^[A-Z0-9]+-(00[1-6])$/i.test(idStr);
+
         return {
           id: c.id,
           name: c.name,
-          type: `${c.type || 'Digimon'}${c.color ? ` • ${c.color}` : ''}`,
+          type: `${isEgg ? 'Digi-Egg' : c.type || 'Digimon'}${c.color ? ` • ${c.color}` : ''}`,
           image_url: c.img || '',
           slot: isEgg ? 'egg' : 'main',
         };
@@ -147,11 +172,12 @@ export async function GET(request: Request) {
     const rawCards = json.data || [];
 
     const cards: NormalizedCard[] = rawCards.map((c: any) => {
+      const typeLower = (c.type || '').toLowerCase();
       const isExtra =
-        c.type?.includes('Fusion') ||
-        c.type?.includes('Synchro') ||
-        c.type?.includes('XYZ') ||
-        c.type?.includes('Link');
+        typeLower.includes('fusion') ||
+        typeLower.includes('synchro') ||
+        typeLower.includes('xyz') ||
+        typeLower.includes('link');
       return {
         id: c.id,
         name: c.name,

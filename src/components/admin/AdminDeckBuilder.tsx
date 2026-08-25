@@ -222,14 +222,73 @@ export function AdminDeckBuilder({
     });
   };
 
-  const addCard = (card: Card, target: "main" | "extra" | "side" = "main") => {
-    if (target === "extra") {
-      setExtraDeck((prev) => sortAndGroupCards([...prev, card], tcgSlug));
-    } else if (target === "side") {
-      setSideDeck((prev) => sortAndGroupCards([...prev, card], tcgSlug));
-    } else {
-      setMainDeck((prev) => sortAndGroupCards([...prev, card], tcgSlug));
+  // Helper to detect if a card belongs to the Extra Deck (YGO Fusion/Synchro/XYZ/Link, Digimon Egg/Tama, One Piece Leader)
+  const isExtraDeckCard = (card: Card, slug: string): boolean => {
+    if (card.slot === "extra" || card.slot === "leader" || card.slot === "egg") {
+      return true;
     }
+
+    const typeLower = (card.type || card.frameType || card.category || card.card_type || "").toLowerCase();
+    const nameLower = (card.name || "").toLowerCase().trim();
+    const idStr = String(card.id || "");
+
+    // Yu-Gi-Oh! Extra Deck types
+    if (slug.includes("yug") || slug.includes("ygo")) {
+      return (
+        typeLower.includes("fusion") ||
+        typeLower.includes("synchro") ||
+        typeLower.includes("xyz") ||
+        typeLower.includes("link")
+      );
+    }
+
+    // Digimon Digi-Egg / Tama
+    if (slug.includes("digi")) {
+      const DIGI_EGGS_NAMES = [
+        "tsumemon", "koromon", "gigimon", "tanemon", "tokomon", "demiveemon", "upamon", "poromon",
+        "mochimon", "motimon", "nyaromon", "pagumon", "yokomon", "pyocomon", "bukamon", "minomon",
+        "yaamon", "hopmon", "caprimon", "chibimon", "gummymon", "chocomon", "kokomon", "pickmon",
+        "dorimon", "kyokyomon", "wanyamon", "cupimon", "pinamon", "puroromon", "torikaraballmon",
+        "bebydomon", "kyaromon", "frimon", "viximon", "sakuttomon", "kakkinmon", "sunamon", "goromon",
+        "bibimon", "bosamon", "bowmon", "chapmon", "dokimon", "leafmon", "zurumon", "botamon",
+        "punimon", "poyomon", "pabumon", "jyarimon", "cocomon", "popomon", "pipimon", "ketomon",
+        "fufumon", "bubbmon", "puwamon", "dodomon", "kuramon", "pafumon", "puttimon", "pichimon",
+        "petitmon", "yukimibotamon", "zerimon", "conomon", "kiimon", "bombmon", "tsunomon",
+        "gurimon", "yarimon", "monimon", "kodokugumon"
+      ];
+      return (
+        typeLower.includes("egg") ||
+        typeLower.includes("huevo") ||
+        typeLower.includes("tama") ||
+        typeLower.includes("in-training") ||
+        DIGI_EGGS_NAMES.some((n) => nameLower === n || nameLower.startsWith(`${n} `)) ||
+        /^[A-Z0-9]+-(00[1-6])$/i.test(idStr)
+      );
+    }
+
+    // One Piece Leader
+    if (slug.includes("one") || slug.includes("piece") || slug.includes("op")) {
+      return typeLower.includes("leader") || typeLower.includes("líder");
+    }
+
+    return false;
+  };
+
+  const addCard = (card: Card, target: "main" | "extra" | "side" = "main") => {
+    // If targeted to Side Deck explicitly, put in Side Deck
+    if (target === "side") {
+      setSideDeck((prev) => sortAndGroupCards([...prev, card], tcgSlug));
+      return;
+    }
+
+    // If card is naturally an Extra Deck / Digi-Egg / Leader, ALWAYS place into Extra Deck
+    if (isExtraDeckCard(card, tcgSlug) || target === "extra") {
+      setExtraDeck((prev) => sortAndGroupCards([...prev, card], tcgSlug));
+      return;
+    }
+
+    // Otherwise standard Main Deck
+    setMainDeck((prev) => sortAndGroupCards([...prev, card], tcgSlug));
   };
 
   const removeCard = (index: number, target: "main" | "extra" | "side") => {
@@ -271,9 +330,26 @@ export function AdminDeckBuilder({
 
     try {
       const parsed = JSON.parse(deck.deckData);
-      setMainDeck(parsed.main || []);
-      setExtraDeck(parsed.extra || []);
-      setSideDeck(parsed.side || []);
+      const rawMain: Card[] = parsed.main || [];
+      const rawExtra: Card[] = parsed.extra || [];
+      const rawSide: Card[] = parsed.side || [];
+
+      // Auto-reallocate any Extra/Egg/Leader cards that might have been saved in Main
+      const activeTcgSlug = deck.tcg?.slug || tcgSlug;
+      const cleanMain: Card[] = [];
+      const cleanExtra: Card[] = [...rawExtra];
+
+      for (const c of rawMain) {
+        if (isExtraDeckCard(c, activeTcgSlug)) {
+          cleanExtra.push(c);
+        } else {
+          cleanMain.push(c);
+        }
+      }
+
+      setMainDeck(sortAndGroupCards(cleanMain, activeTcgSlug));
+      setExtraDeck(sortAndGroupCards(cleanExtra, activeTcgSlug));
+      setSideDeck(sortAndGroupCards(rawSide, activeTcgSlug));
     } catch (e) {
       console.error("Error parsing deckData for edit:", e);
     }
