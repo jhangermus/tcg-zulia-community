@@ -77,9 +77,9 @@ export default async function TorneosPage() {
                     <img
                       src={t.bannerUrl}
                       alt={t.name}
-                      className="w-full h-full object-cover opacity-25 group-hover:opacity-35 transition-all duration-500 scale-100 group-hover:scale-105"
+                      className="w-full h-full object-cover opacity-60 group-hover:opacity-75 transition-all duration-500 scale-100 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#04070d] via-[#070b14]/85 to-[#070b14]/75" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#04070d] via-[#070b14]/70 to-[#070b14]/40" />
                   </div>
                 )}
 
