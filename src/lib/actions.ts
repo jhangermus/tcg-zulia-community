@@ -332,12 +332,38 @@ export async function createDecklist(formData: FormData) {
     return { error: "Datos inválidos" };
   }
 
+  const cleanPlayerName = validated.data.playerName.trim();
+
+  // Find or create Player in DB
+  let player = await prisma.player.findFirst({
+    where: { name: { equals: cleanPlayerName, mode: "insensitive" } },
+  });
+
+  if (!player) {
+    player = await prisma.player.create({
+      data: {
+        name: cleanPlayerName,
+        avatarUrl: validated.data.coverImageUrl || null,
+      },
+    });
+  } else if (validated.data.coverImageUrl && !player.avatarUrl) {
+    await prisma.player.update({
+      where: { id: player.id },
+      data: { avatarUrl: validated.data.coverImageUrl },
+    });
+  }
+
   await prisma.decklist.create({
     data: {
       ...validated.data,
+      playerName: cleanPlayerName,
+      playerId: player.id,
       tournamentId: validated.data.tournamentId || undefined,
     },
   });
+
+  // Recalculate player ranking points
+  await recalculatePlayerPoints(player.id);
 
   revalidatePath("/admin/decks");
   revalidatePath("/admin/torneos");
@@ -345,6 +371,7 @@ export async function createDecklist(formData: FormData) {
   revalidatePath("/recomendadas");
   revalidatePath("/torneos");
   revalidatePath("/ranking");
+  revalidatePath(`/jugador/${encodeURIComponent(cleanPlayerName)}`);
   revalidatePath("/");
   return { success: true };
 }
@@ -374,13 +401,34 @@ export async function updateDecklist(formData: FormData) {
     return { error: "Datos inválidos" };
   }
 
+  const cleanPlayerName = validated.data.playerName.trim();
+
+  // Find or create Player in DB
+  let player = await prisma.player.findFirst({
+    where: { name: { equals: cleanPlayerName, mode: "insensitive" } },
+  });
+
+  if (!player) {
+    player = await prisma.player.create({
+      data: {
+        name: cleanPlayerName,
+        avatarUrl: validated.data.coverImageUrl || null,
+      },
+    });
+  }
+
   await prisma.decklist.update({
     where: { id },
     data: {
       ...validated.data,
+      playerName: cleanPlayerName,
+      playerId: player.id,
       tournamentId: validated.data.tournamentId || null,
     },
   });
+
+  // Recalculate player ranking points
+  await recalculatePlayerPoints(player.id);
 
   revalidatePath("/admin/decks");
   revalidatePath("/admin/torneos");
@@ -388,8 +436,38 @@ export async function updateDecklist(formData: FormData) {
   revalidatePath("/recomendadas");
   revalidatePath("/torneos");
   revalidatePath("/ranking");
+  revalidatePath(`/jugador/${encodeURIComponent(cleanPlayerName)}`);
   revalidatePath("/");
   return { success: true };
+}
+
+// Helper to recalculate a player's total ranking points
+async function recalculatePlayerPoints(playerId: string) {
+  try {
+    const playerDecks = await prisma.decklist.findMany({
+      where: {
+        playerId,
+        isRecommended: false,
+        placement: { gt: 0 },
+      },
+    });
+
+    let totalPoints = 0;
+    for (const d of playerDecks) {
+      if (d.placement === 1) totalPoints += 100;
+      else if (d.placement === 2) totalPoints += 70;
+      else if (d.placement === 3 || d.placement === 4) totalPoints += 40;
+      else if (d.placement <= 8) totalPoints += 20;
+      else totalPoints += 10;
+    }
+
+    await prisma.player.update({
+      where: { id: playerId },
+      data: { points: totalPoints },
+    });
+  } catch (err) {
+    console.error("Error recalculating player points:", err);
+  }
 }
 
 export async function deleteDecklist(id: string) {

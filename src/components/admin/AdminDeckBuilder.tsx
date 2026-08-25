@@ -589,19 +589,25 @@ export function AdminDeckBuilder({
               </div>
             )}
 
-            {/* Player Pilot / Author */}
+            {/* Player Pilot / Author with Autocomplete from Database */}
             <div className={isRecommended ? "md:col-span-2" : ""}>
               <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wider">
                 {isRecommended ? "AUTOR / CREADOR DE LA GUÍA *" : "JUGADOR (PILOTO) *"}
               </label>
               <input
                 type="text"
+                list="registered-players"
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Ej: Jhanger U. / Staff Zulia"
+                placeholder="Ej: William Perez / Andrés Peña"
                 required
                 className="w-full bg-slate-900 border border-slate-700 text-white px-3.5 py-2.5 rounded-lg text-xs focus:outline-none focus:border-yellow-400"
               />
+              <datalist id="registered-players">
+                {Array.from(new Set(existingDecklists.map((d) => d.playerName?.trim()).filter(Boolean))).map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
             </div>
 
             {/* Deck Name */}

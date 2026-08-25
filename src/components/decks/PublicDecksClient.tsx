@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Trophy, Layers, Sparkles, Shield, X, Eye, Calendar, User, MapPin, MessageSquare, ZoomIn } from "lucide-react";
 import { CardZoomModal } from "./CardZoomModal";
 
@@ -150,9 +151,22 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
                   <h3 className="font-black text-xl text-white group-hover:text-yellow-400 transition-colors line-clamp-1 mb-1">
                     {deck.deckName}
                   </h3>
-                  <p className="text-xs font-semibold text-slate-400 mb-4">
-                    Piloto: <span className="text-slate-200 font-bold">{deck.playerName}</span> • {deck.tournamentName}
-                  </p>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
+                    <span>Piloto:</span>
+                    <Link
+                      href={`/jugador/${encodeURIComponent(deck.playerName)}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-yellow-400 font-black hover:underline"
+                    >
+                      {deck.playerName}
+                    </Link>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-semibold mb-4 bg-[#0a0e17] px-2.5 py-1.5 border border-slate-800 rounded">
+                    <Calendar className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                    <span className="text-slate-300">{deck.tournamentDate || deck.createdAt}</span>
+                    <span className="text-slate-600">•</span>
+                    <span className="text-slate-400 truncate">{deck.tournamentName}</span>
+                  </div>
 
                   {/* Admin Commentary Snippet (if available) */}
                   {deck.adminNotes && (

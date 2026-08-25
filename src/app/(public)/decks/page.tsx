@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { PublicDecksClient, DecklistItem } from "@/components/decks/PublicDecksClient";
+import { formatSpanishDate } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -42,12 +43,12 @@ export default async function DecksPage() {
       deckName: d.deckName || "Deck de Torneo",
       placement: d.placement,
       tournamentName: d.tournament?.name || "Torneo Oficial",
-      tournamentDate: d.tournament?.date ? new Date(d.tournament.date).toLocaleDateString("es-VE") : undefined,
+      tournamentDate: d.tournament?.date ? formatSpanishDate(d.tournament.date) : formatSpanishDate(d.createdAt),
       tcgName: d.tcg.name,
       tcgSlug: d.tcg.slug,
       tcgColor: d.tcg.color,
       adminNotes: d.adminNotes,
-      createdAt: new Date(d.createdAt).toLocaleDateString("es-VE"),
+      createdAt: formatSpanishDate(d.createdAt),
       deckData: {
         main: parsedData.main || [],
         extra: parsedData.extra || [],

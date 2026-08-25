@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Calendar, MapPin, Trophy, Users, Award, Flame, ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { formatSpanishDate, formatSpanishDateFull, formatSpanishDateTime } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -28,14 +29,6 @@ export default async function Home() {
       take: 3,
     }),
   ]);
-
-  const formatDate = (date: Date) =>
-    new Date(date).toLocaleDateString("es-VE", {
-      weekday: "short",
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }).toUpperCase();
 
   // Helper to extract cover image from deck
   const getDeckCover = (deck: { coverImageUrl?: string | null; deckData: string }) => {
@@ -112,7 +105,7 @@ export default async function Home() {
                 <div className="space-y-2.5 text-sm font-bold text-slate-200 bg-[#0c1220] p-4 border border-slate-800">
                   <div className="flex items-center gap-2.5">
                     <Calendar className="w-4 h-4 text-yellow-400 shrink-0" />
-                    <span>{formatDate(nextTournament.date)}</span>
+                    <span>{formatSpanishDateTime(nextTournament.date)}</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <MapPin className="w-4 h-4 text-yellow-400 shrink-0" />
@@ -190,7 +183,7 @@ export default async function Home() {
                       {recentTournament.tcg.name}
                     </span>
                     <h4 className="font-black text-lg text-white mt-1 truncate">{recentTournament.name}</h4>
-                    <p className="text-xs text-slate-300 font-bold">{formatDate(recentTournament.date)}</p>
+                    <p className="text-xs text-slate-300 font-bold">{formatSpanishDate(recentTournament.date)}</p>
                   </div>
                 </div>
 

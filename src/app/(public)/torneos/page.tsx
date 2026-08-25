@@ -1,13 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { Trophy, Calendar, MapPin, Users, Award, Clock } from "lucide-react";
 import Link from "next/link";
+import { formatSpanishDate, formatSpanishDateFull, formatSpanishTime } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
 
 export default async function TorneosPage() {
   const [tournaments, tcgs] = await Promise.all([
     prisma.tournament.findMany({
-      orderBy: { date: "desc" },
       include: {
         tcg: true,
         decklists: {
@@ -18,12 +18,17 @@ export default async function TorneosPage() {
     prisma.tcg.findMany({ where: { status: "ACTIVE" }, orderBy: { name: "asc" } }),
   ]);
 
-  const upcomingTournaments = tournaments.filter(
-    (t) => t.status === "UPCOMING" || (t.status === "ONGOING" && new Date(t.date) >= new Date())
-  );
-  const pastTournaments = tournaments.filter(
-    (t) => t.status === "COMPLETED" || new Date(t.date) < new Date()
-  );
+  const now = new Date().getTime();
+
+  // Upcoming: cronológico de más próximo a más lejano (Ascendente)
+  const upcomingTournaments = tournaments
+    .filter((t) => t.status === "UPCOMING" || (t.status === "ONGOING" && new Date(t.date).getTime() >= now))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  // Past / Historial: de más reciente a más antiguo (Descendente)
+  const pastTournaments = tournaments
+    .filter((t) => t.status === "COMPLETED" || new Date(t.date).getTime() < now)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <div className="p-6 md:p-8 space-y-8 bg-[#04070d] min-h-screen bg-tactical-grid">
@@ -82,12 +87,12 @@ export default async function TorneosPage() {
 
                   <div className="space-y-2.5 text-xs font-semibold text-slate-300 mb-6 bg-[#0c1220] p-4 border border-slate-800">
                     <div className="flex items-center gap-2.5 text-slate-200">
-                      <Calendar className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                      <span>{new Date(t.date).toLocaleDateString("es-VE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>
+                      <Calendar className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                      <span className="font-bold">{formatSpanishDateFull(t.date)}</span>
                     </div>
                     <div className="flex items-center gap-2.5 text-slate-300">
                       <Clock className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                      <span>{new Date(t.date).toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" })}</span>
+                      <span>Hora: {formatSpanishTime(t.date)}</span>
                     </div>
                     <div className="flex items-center gap-2.5 text-slate-300">
                       <MapPin className="w-4 h-4 text-slate-500 flex-shrink-0" />
@@ -185,8 +190,8 @@ export default async function TorneosPage() {
                         <span className="text-[9px] font-black uppercase px-2.5 py-0.5 bg-slate-800 text-yellow-400 border border-slate-700 clip-tag-angled">
                           {t.tcg.name}
                         </span>
-                        <span className="text-[10px] text-slate-500 font-medium">
-                          {new Date(t.date).toLocaleDateString("es-VE", { dateStyle: "medium" })}
+                        <span className="text-[10px] text-slate-400 font-bold">
+                          {formatSpanishDate(t.date)}
                         </span>
                       </div>
                       <h3 className="text-xl font-black text-white mb-3">{t.name}</h3>

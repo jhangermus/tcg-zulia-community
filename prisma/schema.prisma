@@ -67,9 +67,23 @@ model Tournament {
   decklists   Decklist[]
 }
 
+model Player {
+  id          String     @id @default(cuid())
+  name        String     @unique // Nombre normalizado del jugador
+  nickname    String?    // Apodo
+  avatarUrl   String?    // Foto / Avatar / Carta insignia
+  phone       String?    // WhatsApp / Contacto
+  points      Int        @default(0) // Puntos acumulados en el ranking
+  decklists   Decklist[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
 model Decklist {
   id            String      @id @default(cuid())
   playerName    String
+  playerId      String?
+  player        Player?     @relation(fields: [playerId], references: [id], onDelete: SetNull)
   placement     Int         @default(0) // 0 for recommended guides, 1,2,3,4,8 for tournament tops
   deckName      String?
   isRecommended Boolean     @default(false)
