@@ -69,37 +69,49 @@ export default async function TorneosPage() {
             {upcomingTournaments.map((t) => (
               <div
                 key={t.id}
-                className="bg-[#070b14] border border-slate-800 hover:border-yellow-400/60 p-6 flex flex-col justify-between transition-all group relative shadow-xl clip-chamfer-tr hud-box hud-bracket-cyan"
+                className="bg-[#070b14] border border-slate-800 hover:border-yellow-400/60 p-6 flex flex-col justify-between transition-all group relative overflow-hidden shadow-xl clip-chamfer-tr hud-box hud-bracket-cyan"
               >
-                <div>
+                {/* Tournament Banner Background Image with High Contrast Overlay */}
+                {t.bannerUrl && (
+                  <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                    <img
+                      src={t.bannerUrl}
+                      alt={t.name}
+                      className="w-full h-full object-cover opacity-25 group-hover:opacity-35 transition-all duration-500 scale-100 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#04070d] via-[#070b14]/85 to-[#070b14]/75" />
+                  </div>
+                )}
+
+                <div className="relative z-10">
                   <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-slate-800 text-yellow-400 border border-yellow-400/30 clip-tag-angled">
+                    <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-slate-800 text-yellow-400 border border-yellow-400/30 clip-tag-angled shadow">
                       {t.tcg.name}
                     </span>
-                    <span className="text-[9px] font-black text-blue-400 bg-blue-500/10 px-2.5 py-0.5 border border-blue-500/20 clip-tag-chevron">
+                    <span className="text-[9px] font-black text-blue-400 bg-blue-500/10 px-2.5 py-0.5 border border-blue-500/20 clip-tag-chevron shadow">
                       {t.status === "ONGOING" ? "EN CURSO" : "PRÓXIMO"}
                     </span>
                   </div>
 
-                  <h3 className="text-2xl font-black italic text-white group-hover:text-yellow-400 transition-colors mb-4">
+                  <h3 className="text-2xl font-black italic text-white group-hover:text-yellow-400 transition-colors mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] [text-shadow:_0_1px_3px_#000000]">
                     {t.name}
                   </h3>
 
-                  <div className="space-y-2.5 text-xs font-semibold text-slate-300 mb-6 bg-[#0c1220] p-4 border border-slate-800">
-                    <div className="flex items-center gap-2.5 text-slate-200">
+                  <div className="space-y-2.5 text-xs font-semibold text-slate-200 mb-6 bg-[#0c1220]/95 backdrop-blur-md p-4 border border-slate-700/80 shadow-lg">
+                    <div className="flex items-center gap-2.5 text-white">
                       <Calendar className="w-4 h-4 text-yellow-400 flex-shrink-0" />
                       <span className="font-bold">{formatSpanishDateFull(t.date)}</span>
                     </div>
-                    <div className="flex items-center gap-2.5 text-slate-300">
-                      <Clock className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                    <div className="flex items-center gap-2.5 text-slate-200">
+                      <Clock className="w-4 h-4 text-slate-400 flex-shrink-0" />
                       <span>Hora: {formatSpanishTime(t.date)}</span>
                     </div>
-                    <div className="flex items-center gap-2.5 text-slate-300">
-                      <MapPin className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                    <div className="flex items-center gap-2.5 text-slate-200">
+                      <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" />
                       <span>{t.location || "Maracaibo, Zulia"}</span>
                     </div>
-                    <div className="flex items-center gap-2.5 text-slate-300">
-                      <Users className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                    <div className="flex items-center gap-2.5 text-slate-200">
+                      <Users className="w-4 h-4 text-slate-400 flex-shrink-0" />
                       <span>Cupo: {t.participantsCount > 0 ? `${t.participantsCount} jugadores` : "Abierto"}</span>
                     </div>
                     {t.prize && (
@@ -113,7 +125,7 @@ export default async function TorneosPage() {
 
                 <Link
                   href="/comunidad"
-                  className="w-full text-center bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black py-3 text-xs transition-colors tracking-widest clip-btn-tactical shadow-lg shadow-yellow-400/20"
+                  className="relative z-10 w-full text-center bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black py-3 text-xs transition-colors tracking-widest clip-btn-tactical shadow-lg shadow-yellow-400/20"
                 >
                   REGISTRARSE AL TORNEO
                 </Link>

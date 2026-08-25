@@ -57,6 +57,7 @@ model Tournament {
   location    String?
   prize       String?
   photoUrl    String?  // Foto del torneo / foto del podio / campeón
+  bannerUrl   String?  // Imagen banner torneo (fondo de la card del torneo)
   tcgId       String
   tcg         Tcg      @relation(fields: [tcgId], references: [id])
   participantsCount Int @default(0)

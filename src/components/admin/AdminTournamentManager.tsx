@@ -15,6 +15,7 @@ export interface AdminTournamentItem {
   location?: string | null;
   prize?: string | null;
   photoUrl?: string | null;
+  bannerUrl?: string | null;
   participantsCount: number;
   status: string;
   tcgId: string;
@@ -45,8 +46,10 @@ export function AdminTournamentManager({
 }) {
   const [editingItem, setEditingItem] = useState<AdminTournamentItem | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerFileInputRef = useRef<HTMLInputElement>(null);
   const formTopRef = useRef<HTMLDivElement>(null);
 
   const handlePhotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,15 +66,31 @@ export function AdminTournamentManager({
     reader.readAsDataURL(file);
   };
 
+  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+      alert("La imagen banner del torneo no debe pesar más de 4MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setBannerPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleStartEdit = (t: AdminTournamentItem) => {
     setEditingItem(t);
     setPhotoPreview(t.photoUrl || null);
+    setBannerPreview(t.bannerUrl || null);
     formTopRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleCancelEdit = () => {
     setEditingItem(null);
     setPhotoPreview(null);
+    setBannerPreview(null);
   };
 
   const handleDelete = async (id: string, name: string) => {
@@ -284,6 +303,65 @@ export function AdminTournamentManager({
                   onChange={(e) => setPhotoPreview(e.target.value)}
                   placeholder="O pega una URL externa de la imagen (https://...)"
                   className="w-full bg-slate-950 border border-slate-800 text-white px-3 py-1.5 rounded text-xs focus:outline-none focus:border-yellow-400"
+                />
+              </div>
+            </div>
+
+            {/* Banner Image Section (Background of tournament card) */}
+            <div className="md:col-span-2 xl:col-span-3 bg-slate-900/60 border border-slate-800 rounded-xl p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-24 h-14 rounded bg-slate-950 border border-slate-700 overflow-hidden flex items-center justify-center shrink-0 shadow relative">
+                    {bannerPreview ? (
+                      <img src={bannerPreview} alt="Banner Torneo" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-slate-600" />
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-white flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-blue-400" /> IMAGEN BANNER TORNEO (FONDO DE LA CARD)
+                    </label>
+                    <p className="text-[11px] text-slate-400">
+                      Imagen o arte temático que aparecerá como fondo de la tarjeta del torneo con efecto difuminado para no restar legibilidad a los textos.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => bannerFileInputRef.current?.click()}
+                    className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold transition-colors border border-slate-700 shrink-0"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-blue-400" /> Subir Banner de PC
+                  </button>
+                  {bannerPreview && (
+                    <button
+                      type="button"
+                      onClick={() => setBannerPreview(null)}
+                      className="text-xs text-red-400 hover:text-red-300 font-bold px-2 py-1"
+                    >
+                      Quitar
+                    </button>
+                  )}
+                  <input
+                    ref={bannerFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBannerFileChange}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <input
+                  name="bannerUrl"
+                  value={bannerPreview || ""}
+                  onChange={(e) => setBannerPreview(e.target.value)}
+                  placeholder="O pega una URL externa para el banner (https://...)"
+                  className="w-full bg-slate-950 border border-slate-800 text-white px-3 py-1.5 rounded text-xs focus:outline-none focus:border-blue-400"
                 />
               </div>
             </div>

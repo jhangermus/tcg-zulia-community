@@ -80,14 +80,26 @@ export default async function Home() {
         </div>
 
         {/* Next Tournament Card (Tactical Chamfered) */}
-        <div className="bg-[#070b14] border border-slate-800 p-6 md:p-8 flex flex-col justify-between relative shadow-xl clip-chamfer-tr hud-box hud-bracket-yellow">
-          <div>
+        <div className="bg-[#070b14] border border-slate-800 p-6 md:p-8 flex flex-col justify-between relative overflow-hidden shadow-xl clip-chamfer-tr hud-box hud-bracket-yellow">
+          {/* Tournament Banner Background Image with High Contrast Overlay */}
+          {nextTournament?.bannerUrl && (
+            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+              <img
+                src={nextTournament.bannerUrl}
+                alt={nextTournament.name}
+                className="w-full h-full object-cover opacity-25 hover:opacity-35 transition-all duration-500 scale-100"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#04070d] via-[#070b14]/85 to-[#070b14]/75" />
+            </div>
+          )}
+
+          <div className="relative z-10">
             <div className="flex justify-between items-center mb-4">
               <span className="text-xs font-black tracking-widest text-yellow-400 uppercase">
                 PRÓXIMO EVENTO
               </span>
               {nextTournament && (
-                <span className="text-[11px] font-black px-3 py-1 bg-yellow-400/10 border border-yellow-400/40 text-yellow-400 uppercase clip-tag-angled">
+                <span className="text-[11px] font-black px-3 py-1 bg-yellow-400/10 border border-yellow-400/40 text-yellow-400 uppercase clip-tag-angled shadow">
                   {nextTournament.tcg.name}
                 </span>
               )}
@@ -96,23 +108,23 @@ export default async function Home() {
             {nextTournament ? (
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-2xl md:text-3xl font-black italic text-white line-clamp-2 leading-tight">
+                  <h3 className="text-2xl md:text-3xl font-black italic text-white line-clamp-2 leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,1)] [text-shadow:_0_1px_3px_#000000]">
                     {nextTournament.name}
                   </h3>
                   <p className="text-sm text-yellow-400 font-black mt-1">Premio: {nextTournament.prize || "Por definir"}</p>
                 </div>
 
-                <div className="space-y-2.5 text-sm font-bold text-slate-200 bg-[#0c1220] p-4 border border-slate-800">
+                <div className="space-y-2.5 text-sm font-bold text-slate-100 bg-[#0c1220]/95 backdrop-blur-md p-4 border border-slate-700/80 shadow-lg">
                   <div className="flex items-center gap-2.5">
                     <Calendar className="w-4 h-4 text-yellow-400 shrink-0" />
                     <span>{formatSpanishDateTime(nextTournament.date)}</span>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <MapPin className="w-4 h-4 text-yellow-400 shrink-0" />
+                    <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
                     <span>{nextTournament.location || "Maracaibo, Zulia"}</span>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <Users className="w-4 h-4 text-yellow-400 shrink-0" />
+                    <Users className="w-4 h-4 text-slate-400 shrink-0" />
                     <span>Cupo: {nextTournament.participantsCount > 0 ? `${nextTournament.participantsCount} duelistas` : "Abierto"}</span>
                   </div>
                 </div>
@@ -128,7 +140,7 @@ export default async function Home() {
 
           <Link
             href="/torneos"
-            className="w-full text-center bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black py-3.5 text-sm transition-colors tracking-widest mt-6 clip-btn-tactical shadow-lg shadow-yellow-400/20"
+            className="relative z-10 w-full text-center bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black py-3.5 text-sm transition-colors tracking-widest mt-6 clip-btn-tactical shadow-lg shadow-yellow-400/20"
           >
             VER CALENDARIO
           </Link>
