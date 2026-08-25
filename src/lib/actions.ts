@@ -230,6 +230,7 @@ const TournamentSchema = z.object({
   date: z.string().min(1),
   location: z.string().optional(),
   prize: z.string().optional(),
+  photoUrl: z.string().optional(),
   tcgId: z.string().min(1),
   participantsCount: z.coerce.number().int().min(0),
   status: z.enum(["UPCOMING", "ONGOING", "COMPLETED"]),
@@ -242,23 +243,57 @@ export async function createTournament(formData: FormData) {
     date: formData.get("date"),
     location: formData.get("location") || undefined,
     prize: formData.get("prize") || undefined,
+    photoUrl: formData.get("photoUrl") || undefined,
     tcgId: formData.get("tcgId"),
     participantsCount: formData.get("participantsCount") || 0,
     status: formData.get("status") || "UPCOMING",
   });
 
-  if (!validated.success) return;
+  if (!validated.success) return { error: "Datos inválidos" };
 
   const { date, ...rest } = validated.data;
   await prisma.tournament.create({ data: { ...rest, date: new Date(date) } });
   revalidatePath("/admin/torneos");
+  revalidatePath("/torneos");
   revalidatePath("/");
+  return { success: true };
+}
+
+export async function updateTournament(formData: FormData) {
+  await requireAdmin();
+  const id = formData.get("id") as string;
+  if (!id) return { error: "ID no proporcionado" };
+
+  const validated = TournamentSchema.safeParse({
+    name: formData.get("name"),
+    date: formData.get("date"),
+    location: formData.get("location") || undefined,
+    prize: formData.get("prize") || undefined,
+    photoUrl: formData.get("photoUrl") || undefined,
+    tcgId: formData.get("tcgId"),
+    participantsCount: formData.get("participantsCount") || 0,
+    status: formData.get("status") || "UPCOMING",
+  });
+
+  if (!validated.success) return { error: "Datos inválidos" };
+
+  const { date, ...rest } = validated.data;
+  await prisma.tournament.update({
+    where: { id },
+    data: { ...rest, date: new Date(date) },
+  });
+  revalidatePath("/admin/torneos");
+  revalidatePath("/torneos");
+  revalidatePath("/");
+  return { success: true };
 }
 
 export async function deleteTournament(id: string) {
   await requireAdmin();
   await prisma.tournament.delete({ where: { id } });
   revalidatePath("/admin/torneos");
+  revalidatePath("/torneos");
+  revalidatePath("/");
 }
 
 // --- DECKLIST ACTIONS ---

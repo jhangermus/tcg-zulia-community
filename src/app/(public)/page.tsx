@@ -152,13 +152,38 @@ export default async function Home() {
             {recentTournament ? (
               <div className="space-y-4">
                 <div className="flex gap-4 items-center">
-                  <div className="w-24 h-28 bg-gradient-to-br from-yellow-400/20 via-slate-900 to-slate-950 border border-yellow-400/40 clip-chamfer-tr flex flex-col items-center justify-center text-center p-2 shrink-0 shadow">
-                    <Trophy className="w-7 h-7 text-yellow-400 mb-1" />
-                    <span className="text-[9px] text-yellow-400 font-black uppercase">CAMPEÓN</span>
-                    <span className="text-sm font-black text-white truncate max-w-full">
-                      {recentTournament.decklists[0]?.playerName?.toUpperCase() ?? "—"}
-                    </span>
-                  </div>
+                  {recentTournament.photoUrl ? (
+                    <div className="w-28 h-32 bg-slate-950 border border-yellow-400/60 clip-chamfer-tr overflow-hidden flex flex-col justify-between relative shrink-0 shadow-lg group">
+                      <img
+                        src={recentTournament.photoUrl}
+                        alt={recentTournament.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
+                      
+                      {/* Champion Tag Top */}
+                      <div className="absolute top-1.5 left-1.5 bg-yellow-400 text-slate-950 text-[8px] font-black uppercase px-1.5 py-0.5 clip-tag-angled shadow">
+                        👑 CAMPEÓN
+                      </div>
+
+                      {/* Champion Name Bottom: White text with black shadow/border */}
+                      <div className="absolute bottom-1.5 inset-x-1.5 text-center">
+                        <span className="text-xs font-black text-white leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,1)] [text-shadow:_0_1px_3px_#000000] truncate block">
+                          {recentTournament.decklists[0]?.playerName?.toUpperCase() ?? "CAMPEÓN"}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-24 h-28 bg-gradient-to-br from-yellow-400/20 via-slate-900 to-slate-950 border border-yellow-400/40 clip-chamfer-tr flex flex-col items-center justify-center text-center p-2 shrink-0 shadow">
+                      <Trophy className="w-7 h-7 text-yellow-400 mb-1" />
+                      <span className="text-[9px] text-yellow-400 font-black uppercase">CAMPEÓN</span>
+                      <span className="text-sm font-black text-white truncate max-w-full">
+                        {recentTournament.decklists[0]?.playerName?.toUpperCase() ?? "—"}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="min-w-0">
                     <span className="text-[10px] font-black px-2.5 py-0.5 bg-slate-800 text-yellow-400 uppercase clip-tag-angled">
                       {recentTournament.tcg.name}

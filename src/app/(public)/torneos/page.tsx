@@ -138,17 +138,46 @@ export default async function TorneosPage() {
 
               return (
                 <div key={t.id} className="bg-[#070b14] border border-slate-800 p-6 flex flex-col sm:flex-row gap-6 shadow-xl clip-chamfer-tr">
-                  {/* Champion Box */}
-                  <div className="w-full sm:w-40 h-40 bg-gradient-to-br from-yellow-400/20 via-[#0c1220] to-[#04070d] flex flex-col items-center justify-center text-center p-3 border border-yellow-400/30 clip-chamfer-tr flex-shrink-0">
-                    <Trophy className="w-8 h-8 text-yellow-400 mb-1.5" />
-                    <span className="text-[9px] text-yellow-400 font-black uppercase tracking-wider">CAMPEÓN</span>
-                    <span className="text-sm font-black text-white truncate max-w-full">
-                      {champion?.playerName || "—"}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-semibold truncate max-w-full mt-0.5">
-                      {champion?.deckName || "Por definir"}
-                    </span>
-                  </div>
+                  {/* Champion Box / Photo */}
+                  {t.photoUrl ? (
+                    <div className="w-full sm:w-44 h-44 bg-slate-950 border border-yellow-400/60 clip-chamfer-tr overflow-hidden flex flex-col justify-between relative flex-shrink-0 shadow-lg group">
+                      <img
+                        src={t.photoUrl}
+                        alt={t.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
+
+                      {/* Champion Tag Top */}
+                      <div className="absolute top-2 left-2 bg-yellow-400 text-slate-950 text-[9px] font-black uppercase px-2 py-0.5 clip-tag-angled shadow">
+                        👑 CAMPEÓN
+                      </div>
+
+                      {/* Champion Name Bottom: White text with black shadow/border */}
+                      <div className="absolute bottom-2 inset-x-2 text-center">
+                        <span className="text-xs font-black text-white leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,1)] [text-shadow:_0_1px_3px_#000000] truncate block">
+                          {champion?.playerName?.toUpperCase() || "CAMPEÓN"}
+                        </span>
+                        {champion?.deckName && (
+                          <span className="text-[10px] text-yellow-300 font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,1)] [text-shadow:_0_1px_2px_#000000] truncate block">
+                            {champion.deckName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full sm:w-40 h-40 bg-gradient-to-br from-yellow-400/20 via-[#0c1220] to-[#04070d] flex flex-col items-center justify-center text-center p-3 border border-yellow-400/30 clip-chamfer-tr flex-shrink-0">
+                      <Trophy className="w-8 h-8 text-yellow-400 mb-1.5" />
+                      <span className="text-[9px] text-yellow-400 font-black uppercase tracking-wider">CAMPEÓN</span>
+                      <span className="text-sm font-black text-white truncate max-w-full">
+                        {champion?.playerName || "—"}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-semibold truncate max-w-full mt-0.5">
+                        {champion?.deckName || "Por definir"}
+                      </span>
+                    </div>
+                  )}
 
                   <div className="flex-grow flex flex-col justify-between">
                     <div>
