@@ -82,7 +82,7 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-slate-500 block uppercase">Instagram</span>
-                  <span className="text-xs font-black text-white group-hover:text-purple-300">@zulia_tcg</span>
+                  <span className="text-xs font-black text-white group-hover:text-purple-300">@zuliatcg</span>
                 </div>
               </a>
             )}
@@ -99,7 +99,7 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-slate-500 block uppercase">TikTok</span>
-                  <span className="text-xs font-black text-white group-hover:text-pink-300">@zulia_tcg</span>
+                  <span className="text-xs font-black text-white group-hover:text-pink-300">@zuliatcg</span>
                 </div>
               </a>
             )}
@@ -147,22 +147,20 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
         <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
           <button
             onClick={() => setActiveTab("stores")}
-            className={`flex items-center gap-2 px-6 py-3 text-xs font-black transition-all clip-chamfer-tr ${
-              activeTab === "stores"
+            className={`flex items-center gap-2 px-6 py-3 text-xs font-black transition-all clip-chamfer-tr ${activeTab === "stores"
                 ? "bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/20"
                 : "bg-[#070b14] hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800"
-            }`}
+              }`}
           >
             <Store className="w-4 h-4" /> TIENDAS Y SEDES ({stores.length})
           </button>
 
           <button
             onClick={() => setActiveTab("groups")}
-            className={`flex items-center gap-2 px-6 py-3 text-xs font-black transition-all clip-chamfer-tr ${
-              activeTab === "groups"
+            className={`flex items-center gap-2 px-6 py-3 text-xs font-black transition-all clip-chamfer-tr ${activeTab === "groups"
                 ? "bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/20"
                 : "bg-[#070b14] hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800"
-            }`}
+              }`}
           >
             <FaWhatsapp className="w-4 h-4 text-emerald-400" /> GRUPOS DE WHATSAPP ({groups.length})
           </button>
@@ -275,11 +273,10 @@ export function PublicCommunityClient({ stores, groups, socials }: PublicCommuni
                 <button
                   key={filter}
                   onClick={() => setSelectedGroupTcg(filter)}
-                  className={`text-xs font-black px-4 py-2 border transition-all clip-chamfer-tr ${
-                    selectedGroupTcg === filter
+                  className={`text-xs font-black px-4 py-2 border transition-all clip-chamfer-tr ${selectedGroupTcg === filter
                       ? "bg-emerald-500 text-slate-950 border-emerald-500 shadow-lg shadow-emerald-500/20"
                       : "bg-[#070b14] border-slate-800 text-slate-400 hover:text-white"
-                  }`}
+                    }`}
                 >
                   {filter === "ALL" ? "TODOS LOS GRUPOS" : filter}
                 </button>
