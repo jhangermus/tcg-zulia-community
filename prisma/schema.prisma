@@ -144,3 +144,23 @@ model CommunityGroup {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model TelegramAdmin {
+  id         String   @id @default(cuid())
+  telegramId String   @unique
+  name       String
+  username   String?
+  role       String   @default("ADMIN") // "SUPERADMIN", "ADMIN"
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model TelegramSession {
+  id         String   @id @default(cuid())
+  telegramId String   @unique
+  step       String   // e.g. "AWAITING_TOURNAMENT_DATA", "AWAITING_PODIUM_PHOTO"
+  data       String   @default("{}") // JSON data for multi-step wizards
+  updatedAt  DateTime @updatedAt
+}
+
