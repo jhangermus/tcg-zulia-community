@@ -1,8 +1,8 @@
-FROM node:22-alpine
+FROM node:22-slim
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm install --ignore-scripts --legacy-peer-deps
 
 COPY . .
 
