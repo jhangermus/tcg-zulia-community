@@ -110,6 +110,7 @@ model Product {
   imageUrl    String?
   category    String?  // "SLEEVES", "PLAYMATS", "SINGLES", "ACCESORIOS"
   status      String   @default("AVAILABLE") // "AVAILABLE", "OUT_OF_STOCK", "HIDDEN"
+  whatsappNumber String? // Número personalizado de WhatsApp (ej: "+584124721740"). Si es null o vacío, usa el predeterminado (+584124721740).
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

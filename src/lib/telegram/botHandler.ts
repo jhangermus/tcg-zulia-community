@@ -150,6 +150,30 @@ async function handleMessage(msg: any) {
     return;
   }
 
+  // /tienda o /productos - Lista de productos
+  if (text.startsWith("/tienda") || text.startsWith("/productos") || text === "🛍️ Tienda" || text === "🛍️ Tienda y Productos") {
+    await sendProductsMenu(chatId);
+    return;
+  }
+
+  // /crear_producto [Nombre] | [Precio] | [Stock] | [Categoría] | [Teléfono Opcional]
+  if (text.startsWith("/crear_producto") || text === "➕ Nuevo Producto") {
+    if (msg.photo && msg.photo.length > 0) {
+      const bestPhoto = msg.photo[msg.photo.length - 1];
+      const dataUri = await getTelegramFileAsDataUri(bestPhoto.file_id);
+      await handleCreateProductWithPhoto(chatId, text, dataUri);
+    } else {
+      await handleQuickCreateProduct(chatId, text);
+    }
+    return;
+  }
+
+  // /nuevo_producto - Asistente
+  if (text.startsWith("/nuevo_producto")) {
+    await sendNewProductPrompt(chatId);
+    return;
+  }
+
   // /noticias
   if (text.startsWith("/noticias") || text === "📰 Noticias") {
     await sendNewsMenu(chatId);
@@ -181,6 +205,9 @@ async function handleMessage(msg: any) {
     `🏆 <b>Torneos:</b>\n` +
     `• /torneos - Ver torneos activos y cambiar estado\n` +
     `• /nuevo_torneo - Crear nuevo torneo\n\n` +
+    `🛍️ <b>Tienda y Mercancía:</b>\n` +
+    `• /tienda - Ver catálogo, stock y estados\n` +
+    `• /crear_producto - Publicar accesorio o producto\n\n` +
     `📰 <b>Noticias:</b>\n` +
     `• /noticias - Ver últimas noticias\n` +
     `• /crear_noticia Título | Contenido - Publicar noticia\n\n` +
@@ -199,6 +226,10 @@ async function sendMainMenu(chatId: number, auth: { name: string; isSuperAdmin: 
     [
       { text: "🏆 Ver Torneos", callback_data: "menu_tournaments" },
       { text: "➕ Nuevo Torneo", callback_data: "menu_new_tournament" },
+    ],
+    [
+      { text: "🛍️ Tienda y Productos", callback_data: "menu_products" },
+      { text: "➕ Nuevo Producto", callback_data: "prod_new" },
     ],
     [
       { text: "📰 Noticias", callback_data: "menu_news" },
@@ -228,9 +259,9 @@ async function sendMainMenu(chatId: number, auth: { name: string; isSuperAdmin: 
 function getMainKeyboard() {
   return {
     keyboard: [
-      [{ text: "🏆 Torneos" }, [{ text: "➕ Nuevo Torneo" }][0]],
-      [{ text: "📰 Noticias" }, [{ text: "👥 Jugadores & Ranking" }][0]],
-      [{ text: "⚙️ Administradores" }, [{ text: "🏠 Menú Principal" }][0]],
+      [{ text: "🏆 Torneos" }, { text: "🛍️ Tienda" }],
+      [{ text: "📰 Noticias" }, { text: "👥 Jugadores & Ranking" }],
+      [{ text: "⚙️ Administradores" }, { text: "🏠 Menú Principal" }],
     ],
     resize_keyboard: true,
   };
@@ -363,6 +394,73 @@ async function handleCallbackQuery(cb: any) {
     } catch (e: any) {
       await answerTelegramCallbackQuery(cbId, e.message || "Error al revocar", true);
     }
+    return;
+  }
+
+  // --- GESTIÓN DE TIENDA Y PRODUCTOS ---
+
+  if (data === "menu_products" || data === "prod_list") {
+    await answerTelegramCallbackQuery(cbId);
+    await sendProductsMenu(chatId);
+    return;
+  }
+
+  if (data === "prod_new") {
+    await answerTelegramCallbackQuery(cbId);
+    await sendNewProductPrompt(chatId);
+    return;
+  }
+
+  // Ver producto: `prod_view_<id>`
+  if (data.startsWith("prod_view_")) {
+    const prodId = data.replace("prod_view_", "");
+    await answerTelegramCallbackQuery(cbId);
+    await sendProductDetail(chatId, prodId);
+    return;
+  }
+
+  // Cambiar estado de producto: `prod_status_<id>_<status>`
+  if (data.startsWith("prod_status_")) {
+    const parts = data.split("_");
+    const prodId = parts[2];
+    const newStatus = parts[3]; // AVAILABLE, OUT_OF_STOCK, HIDDEN
+
+    await prisma.product.update({
+      where: { id: prodId },
+      data: { status: newStatus },
+    });
+
+    const statusLabel = newStatus === "AVAILABLE" ? "Disponible" : newStatus === "OUT_OF_STOCK" ? "Sin Stock" : "Oculto";
+    await answerTelegramCallbackQuery(cbId, `Estado: ${statusLabel}`);
+    await sendProductDetail(chatId, prodId);
+    return;
+  }
+
+  // Subir foto de producto: `prod_photo_<id>`
+  if (data.startsWith("prod_photo_")) {
+    const prodId = data.replace("prod_photo_", "");
+    await prisma.telegramSession.upsert({
+      where: { telegramId: String(fromId) },
+      update: { step: "AWAITING_PRODUCT_PHOTO", data: JSON.stringify({ productId: prodId }) },
+      create: { telegramId: String(fromId), step: "AWAITING_PRODUCT_PHOTO", data: JSON.stringify({ productId: prodId }) },
+    });
+
+    await answerTelegramCallbackQuery(cbId);
+    await sendTelegramMessage(
+      chatId,
+      `📷 <b>Sube la Foto del Producto</b>\n\n` +
+      `Envía la imagen del accesorio o producto como foto a este chat.\n\n` +
+      `<i>Escribe /cancelar para anular.</i>`
+    );
+    return;
+  }
+
+  // Eliminar producto: `prod_del_<id>`
+  if (data.startsWith("prod_del_")) {
+    const prodId = data.replace("prod_del_", "");
+    await prisma.product.delete({ where: { id: prodId } });
+    await answerTelegramCallbackQuery(cbId, "Producto eliminado", true);
+    await sendProductsMenu(chatId);
     return;
   }
 }
@@ -514,6 +612,19 @@ async function handlePhotoUploadWithSession(
 
     await sendTelegramMessage(chatId, "✅ <b>¡Banner del Torneo actualizado con éxito!</b>");
     await sendTournamentDetail(chatId, sessionData.tournamentId);
+    return;
+  }
+
+  // Si era para Foto de Producto de Tienda
+  if (session.step === "AWAITING_PRODUCT_PHOTO" && sessionData.productId) {
+    await prisma.product.update({
+      where: { id: sessionData.productId },
+      data: { imageUrl: dataUri },
+    });
+    await prisma.telegramSession.delete({ where: { telegramId: String(fromId) } });
+
+    await sendTelegramMessage(chatId, "✅ <b>¡Foto del Producto actualizada con éxito!</b>");
+    await sendProductDetail(chatId, sessionData.productId);
     return;
   }
 }
@@ -789,4 +900,253 @@ async function sendRankingSummary(chatId: number) {
       ],
     },
   });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MÓDULO TIENDA Y MERCANCÍA (TELEGRAM)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Normaliza un número telefónico para WhatsApp (solo dígitos) */
+function sanitizeWhatsappNumber(phone?: string | null): string | null {
+  if (!phone) return null;
+  const clean = phone.trim().replace(/[^\d+]/g, "").replace(/^\+/, "");
+  if (!clean) return null;
+  if (clean.startsWith("04") && clean.length === 11) return `58${clean.slice(1)}`;
+  if (clean.startsWith("4") && clean.length === 10) return `58${clean}`;
+  return clean;
+}
+
+/** Menú y Lista de Productos de la Tienda */
+async function sendProductsMenu(chatId: number) {
+  const products = await prisma.product.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 12,
+  });
+
+  let text = `🛍️ <b>Tienda y Mercancía Zulia TCG</b>\n`;
+  text += `Accesorios, micas, playmats y dados disponibles.\n\n`;
+
+  if (products.length === 0) {
+    text += `<i>No hay productos registrados en el catálogo.</i>`;
+  } else {
+    text += `Selecciona un producto para ver detalles, cambiar stock o su WhatsApp de venta:`;
+  }
+
+  const keyboard: InlineKeyboardButton[][] = [];
+
+  for (const p of products) {
+    const statusIcon = p.status === "AVAILABLE" ? "🟢" : p.status === "OUT_OF_STOCK" ? "🔴" : "👁️";
+    const phoneLabel = p.whatsappNumber ? `📱 +${p.whatsappNumber}` : `📱 Default`;
+    keyboard.push([
+      {
+        text: `${statusIcon} $${p.price.toFixed(2)} | ${p.name.slice(0, 24)} (${phoneLabel})`,
+        callback_data: `prod_view_${p.id}`,
+      },
+    ]);
+  }
+
+  keyboard.push([
+    { text: "➕ Publicar Nuevo Producto", callback_data: "prod_new" },
+  ]);
+  keyboard.push([
+    { text: "🌐 Ver Tienda en la Web", url: `${APP_URL}/tienda` },
+    { text: "⬅️ Menú Principal", callback_data: "menu_main" },
+  ]);
+
+  await sendTelegramMessage(chatId, text, {
+    reply_markup: { inline_keyboard: keyboard },
+  });
+}
+
+/** Detalle de un producto individual */
+async function sendProductDetail(chatId: number, productId: string) {
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+  });
+
+  if (!product) {
+    await sendTelegramMessage(chatId, "❌ Producto no encontrado o eliminado.");
+    return;
+  }
+
+  const defaultPhone = "584124721740";
+  const targetPhone = (product.whatsappNumber && product.whatsappNumber.trim()) 
+    ? product.whatsappNumber.trim() 
+    : defaultPhone;
+  const isCustomPhone = !!(product.whatsappNumber && product.whatsappNumber.trim());
+
+  const statusText =
+    product.status === "AVAILABLE"
+      ? "🟢 Disponible"
+      : product.status === "OUT_OF_STOCK"
+      ? "🔴 Sin Stock (Agotado)"
+      : "👁️ Oculto";
+
+  const whatsappMsg = encodeURIComponent(
+    `¡Hola Zulia TCG! Me interesa comprar el producto: *${product.name}* (Precio: $${product.price.toFixed(2)}). ¿Aún está disponible?`
+  );
+  const whatsappUrl = `https://wa.me/${targetPhone}?text=${whatsappMsg}`;
+
+  const message =
+    `🛍️ <b>${product.name}</b>\n\n` +
+    `💰 <b>Precio:</b> $${product.price.toFixed(2)}\n` +
+    `📦 <b>Stock:</b> ${product.stock} unidades\n` +
+    `🏷️ <b>Categoría:</b> ${product.category || "ACCESORIOS"}\n` +
+    `📊 <b>Estado:</b> <b>${statusText}</b>\n` +
+    `📱 <b>WhatsApp de Contacto:</b> <code>+${targetPhone}</code> ${isCustomPhone ? "<i>(Personalizado)</i>" : "<i>(Predeterminado)</i>"}\n` +
+    (product.description ? `\n📝 <i>${product.description}</i>\n` : "") +
+    (product.imageUrl ? `\n🖼️ <i>Tiene foto cargada</i>\n` : "");
+
+  const keyboard: InlineKeyboardButton[][] = [
+    // Cambiar Estado
+    [
+      {
+        text: product.status === "AVAILABLE" ? "✓ Disponible" : "🟢 Disponible",
+        callback_data: `prod_status_${product.id}_AVAILABLE`,
+      },
+      {
+        text: product.status === "OUT_OF_STOCK" ? "✓ Agotado" : "🔴 Agotar",
+        callback_data: `prod_status_${product.id}_OUT_OF_STOCK`,
+      },
+      {
+        text: product.status === "HIDDEN" ? "✓ Oculto" : "👁️ Ocultar",
+        callback_data: `prod_status_${product.id}_HIDDEN`,
+      },
+    ],
+    // Foto y WhatsApp
+    [
+      { text: "📷 Cambiar Foto", callback_data: `prod_photo_${product.id}` },
+      { text: "💬 Probar WhatsApp", url: whatsappUrl },
+    ],
+    // Eliminar y Regresar
+    [
+      { text: "🗑️ Eliminar Producto", callback_data: `prod_del_${product.id}` },
+      { text: "⬅️ Volver a Tienda", callback_data: "prod_list" },
+    ],
+  ];
+
+  await sendTelegramMessage(chatId, message, {
+    reply_markup: { inline_keyboard: keyboard },
+  });
+}
+
+/** Instrucciones para nuevo producto */
+async function sendNewProductPrompt(chatId: number) {
+  await sendTelegramMessage(
+    chatId,
+    `➕ <b>Publicar Nuevo Producto en Tienda</b>\n\n` +
+    `Puedes enviar un mensaje de texto o una <b>foto con el texto adjunto</b> usando el siguiente formato:\n\n` +
+    `<code>/crear_producto Nombre | Precio | Stock | Categoría | Teléfono (Opcional)</code>\n\n` +
+    `📌 <b>Ejemplo 1 (Usa WhatsApp predeterminado +584124721740):</b>\n` +
+    `<code>/crear_producto Dragon Shield Dual Orchid | 12.5 | 5 | SLEEVES</code>\n\n` +
+    `📌 <b>Ejemplo 2 (Con WhatsApp personalizado):</b>\n` +
+    `<code>/crear_producto Playmat Oficial Digimon | 25 | 2 | PLAYMATS | +584141234567</code>\n\n` +
+    `🏷️ <i>Categorías sugeridas: SLEEVES, PLAYMATS, DECK_BOXES, SINGLES, ACCESORIOS</i>`
+  );
+}
+
+/** Crear producto rápido desde texto */
+async function handleQuickCreateProduct(chatId: number, text: string) {
+  const payload = text.replace("/crear_producto", "").trim();
+  const parts = payload.split("|").map((p) => p.trim());
+
+  if (parts.length < 2) {
+    await sendTelegramMessage(
+      chatId,
+      `⚠️ <b>Formato incompleto.</b> Usa:\n` +
+      `<code>/crear_producto Nombre | Precio | Stock (opc) | Categoría (opc) | Teléfono (opc)</code>`
+    );
+    return;
+  }
+
+  const [name, priceStr, stockStr = "5", category = "ACCESORIOS", rawPhone] = parts;
+  const price = parseFloat(priceStr.replace("$", ""));
+  const stock = parseInt(stockStr, 10) || 5;
+
+  if (isNaN(price)) {
+    await sendTelegramMessage(chatId, `❌ Precio inválido "<b>${priceStr}</b>". Escribe un número como <code>12.5</code>`);
+    return;
+  }
+
+  const sanitizedPhone = rawPhone ? sanitizeWhatsappNumber(rawPhone) : null;
+
+  const product = await prisma.product.create({
+    data: {
+      name,
+      price,
+      stock,
+      category: category.toUpperCase(),
+      status: "AVAILABLE",
+      whatsappNumber: sanitizedPhone,
+    },
+  });
+
+  const phoneUsed = sanitizedPhone ? `+${sanitizedPhone} (Personalizado)` : `+584124721740 (Predeterminado)`;
+
+  await sendTelegramMessage(
+    chatId,
+    `🎉 <b>¡Producto publicado con éxito en la tienda!</b>\n\n` +
+    `🛍️ <b>${product.name}</b>\n` +
+    `💰 Precio: $${product.price.toFixed(2)}\n` +
+    `📦 Stock: ${product.stock} unid.\n` +
+    `🏷️ Categoría: ${product.category}\n` +
+    `📱 Contacto: ${phoneUsed}\n` +
+    `🌐 Ver en web: ${APP_URL}/tienda`,
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "📷 Agregar Foto al Producto", callback_data: `prod_photo_${product.id}` }],
+          [{ text: "🛍️ Ver Lista de Productos", callback_data: "prod_list" }],
+        ],
+      },
+    }
+  );
+}
+
+/** Crear producto con foto adjunta */
+async function handleCreateProductWithPhoto(chatId: number, text: string, imageUrl: string | null) {
+  const payload = text.replace("/crear_producto", "").trim();
+  const parts = payload.split("|").map((p) => p.trim());
+
+  const name = parts[0] || "Nuevo Accesorio";
+  const priceStr = parts[1] || "10";
+  const stockStr = parts[2] || "5";
+  const category = parts[3] || "ACCESORIOS";
+  const rawPhone = parts[4];
+
+  const price = parseFloat(priceStr.replace("$", "")) || 10;
+  const stock = parseInt(stockStr, 10) || 5;
+  const sanitizedPhone = rawPhone ? sanitizeWhatsappNumber(rawPhone) : null;
+
+  const product = await prisma.product.create({
+    data: {
+      name,
+      price,
+      stock,
+      imageUrl: imageUrl || null,
+      category: category.toUpperCase(),
+      status: "AVAILABLE",
+      whatsappNumber: sanitizedPhone,
+    },
+  });
+
+  const phoneUsed = sanitizedPhone ? `+${sanitizedPhone} (Personalizado)` : `+584124721740 (Predeterminado)`;
+
+  await sendTelegramMessage(
+    chatId,
+    `🎉 <b>¡Producto con foto publicado con éxito en la tienda!</b>\n\n` +
+    `🛍️ <b>${product.name}</b>\n` +
+    `💰 Precio: $${product.price.toFixed(2)}\n` +
+    `📦 Stock: ${product.stock} unid.\n` +
+    `🏷️ Categoría: ${product.category}\n` +
+    `📱 Contacto: ${phoneUsed}\n` +
+    `🌐 Ver en web: ${APP_URL}/tienda`,
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "🛍️ Ver Lista de Productos", callback_data: "prod_list" }],
+        ],
+      },
+    }
+  );
 }

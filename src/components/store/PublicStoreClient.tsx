@@ -13,6 +13,7 @@ export interface ProductItem {
   imageUrl?: string | null;
   category?: string | null;
   status: string;
+  whatsappNumber?: string | null;
 }
 
 interface PublicStoreClientProps {
@@ -31,7 +32,7 @@ const CATEGORIES = [
 
 export function PublicStoreClient({
   products,
-  whatsappNumber = "584120000000",
+  whatsappNumber = "584124721740",
 }: PublicStoreClientProps) {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -95,10 +96,13 @@ export function PublicStoreClient({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filtered.map((product) => {
             const isOutOfStock = product.status === "OUT_OF_STOCK" || product.stock <= 0;
+            const targetPhone = (product.whatsappNumber && product.whatsappNumber.trim()) 
+              ? product.whatsappNumber.trim() 
+              : whatsappNumber;
             const whatsappMsg = encodeURIComponent(
               `¡Hola Zulia TCG! Me interesa comprar el producto: *${product.name}* (Precio: $${product.price.toFixed(2)}). ¿Aún está disponible?`
             );
-            const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMsg}`;
+            const whatsappUrl = `https://wa.me/${targetPhone}?text=${whatsappMsg}`;
 
             return (
               <div

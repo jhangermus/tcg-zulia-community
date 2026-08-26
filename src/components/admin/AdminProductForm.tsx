@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Plus, Upload, Image as ImageIcon, Check, RefreshCw, X, ShoppingBag } from "lucide-react";
+import { Plus, Upload, Image as ImageIcon, Check, RefreshCw, X, ShoppingBag, Phone } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 import { createProduct } from "@/lib/actions";
 
 const CATEGORIES = ["SLEEVES", "PLAYMATS", "ACCESORIOS", "SINGLES", "CAJAS Y SOBRES", "OTROS"];
@@ -13,6 +14,10 @@ export function AdminProductForm() {
   const [stock, setStock] = useState("5");
   const [category, setCategory] = useState("SLEEVES");
   const [status, setStatus] = useState("AVAILABLE");
+  
+  // WhatsApp Configuration
+  const [useDefaultWhatsapp, setUseDefaultWhatsapp] = useState(true);
+  const [customWhatsapp, setCustomWhatsapp] = useState("");
   
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageUrlInput, setImageUrlInput] = useState("");
@@ -66,6 +71,9 @@ export function AdminProductForm() {
       formData.append("stock", stock);
       formData.append("category", category);
       formData.append("status", status);
+      if (!useDefaultWhatsapp && customWhatsapp.trim()) {
+        formData.append("whatsappNumber", customWhatsapp.trim());
+      }
       if (imagePreview) {
         formData.append("imageUrl", imagePreview);
       }
@@ -77,6 +85,8 @@ export function AdminProductForm() {
       setDescription("");
       setPrice("");
       setStock("5");
+      setUseDefaultWhatsapp(true);
+      setCustomWhatsapp("");
       clearImage();
       setSuccessMsg(true);
       setTimeout(() => setSuccessMsg(false), 3000);
@@ -190,6 +200,58 @@ export function AdminProductForm() {
               placeholder="Detalles sobre el producto, medidas, características especiales o condición..."
               className="w-full bg-slate-900 border border-slate-700 text-white px-3.5 py-2.5 rounded-lg text-xs focus:outline-none focus:border-yellow-400 resize-none"
             />
+          </div>
+
+          {/* WhatsApp Contact Configuration */}
+          <div className="md:col-span-2 lg:col-span-3 bg-slate-900/60 border border-slate-800 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FaWhatsapp className="w-5 h-5 text-emerald-400" />
+                <span className="text-xs font-black text-white tracking-wide">
+                  CONTACTO DE WHATSAPP PARA LA VENTA
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-semibold">
+                {useDefaultWhatsapp ? "Usando número oficial" : "Número personalizado"}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <label className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-slate-300 select-none">
+                <input
+                  type="checkbox"
+                  checked={useDefaultWhatsapp}
+                  onChange={(e) => {
+                    setUseDefaultWhatsapp(e.target.checked);
+                    if (e.target.checked) setCustomWhatsapp("");
+                  }}
+                  className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer accent-emerald-500"
+                />
+                <span>Usar WhatsApp predeterminado de Zulia TCG <strong className="text-emerald-400 font-black">(+58 412-4721740)</strong></span>
+              </label>
+            </div>
+
+            {!useDefaultWhatsapp && (
+              <div className="pt-2 border-t border-slate-800/80">
+                <label className="block text-[11px] font-bold text-slate-300 mb-1 tracking-wider">
+                  NÚMERO DE WHATSAPP DEL VENDEDOR / CONTACTO *
+                </label>
+                <div className="relative max-w-md">
+                  <Phone className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    required={!useDefaultWhatsapp}
+                    value={customWhatsapp}
+                    onChange={(e) => setCustomWhatsapp(e.target.value)}
+                    placeholder="Ej: +584141234567 o 04141234567"
+                    className="w-full bg-slate-950 border border-emerald-500/40 focus:border-emerald-400 text-white pl-9 pr-3.5 py-2 rounded-lg text-xs focus:outline-none"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Los clientes que hagan clic en "PEDIR POR WHATSAPP" en este producto se comunicarán directamente a este número.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Image Upload Section */}

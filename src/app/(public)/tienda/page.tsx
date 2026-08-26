@@ -15,7 +15,7 @@ export default async function TiendaPage() {
     }),
   ]);
 
-  const whatsappNumber = whatsappConfig?.value || "584120000000";
+  const whatsappNumber = whatsappConfig?.value || "584124721740";
 
   const products: ProductItem[] = dbProducts.map((p) => ({
     id: p.id,
@@ -26,6 +26,7 @@ export default async function TiendaPage() {
     imageUrl: p.imageUrl,
     category: p.category,
     status: p.status,
+    whatsappNumber: p.whatsappNumber,
   }));
 
   return (

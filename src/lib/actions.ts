@@ -196,10 +196,30 @@ const ProductSchema = z.object({
   imageUrl: z.string().optional(),
   category: z.string().optional(),
   status: z.enum(["AVAILABLE", "OUT_OF_STOCK", "HIDDEN"]),
+  whatsappNumber: z.string().optional().nullable(),
 });
+
+/** Normaliza un número telefónico para WhatsApp (solo dígitos) */
+function sanitizeWhatsappNumber(phone?: string | null): string | null {
+  if (!phone) return null;
+  const clean = phone.trim().replace(/[^\d+]/g, "").replace(/^\+/, "");
+  if (!clean) return null;
+  // Si comienza con 04 (ej: 04121234567), anteponer 58
+  if (clean.startsWith("04") && clean.length === 11) {
+    return `58${clean.slice(1)}`;
+  }
+  // Si comienza con 4 (ej: 4121234567) y tiene 10 dígitos, anteponer 58
+  if (clean.startsWith("4") && clean.length === 10) {
+    return `58${clean}`;
+  }
+  return clean;
+}
 
 export async function createProduct(formData: FormData) {
   await requireAdmin();
+  const rawWhatsapp = formData.get("whatsappNumber")?.toString().trim();
+  const sanitizedWhatsapp = rawWhatsapp ? sanitizeWhatsappNumber(rawWhatsapp) : null;
+
   const validated = ProductSchema.safeParse({
     name: formData.get("name"),
     description: formData.get("description") || undefined,
@@ -208,12 +228,25 @@ export async function createProduct(formData: FormData) {
     imageUrl: formData.get("imageUrl") || undefined,
     category: formData.get("category") || undefined,
     status: formData.get("status") || "AVAILABLE",
+    whatsappNumber: sanitizedWhatsapp,
   });
 
   if (!validated.success) return;
 
   await prisma.product.create({ data: validated.data });
   revalidatePath("/admin/tienda");
+  revalidatePath("/tienda");
+  revalidatePath("/");
+}
+
+export async function updateProductStatus(id: string, status: "AVAILABLE" | "OUT_OF_STOCK" | "HIDDEN") {
+  await requireAdmin();
+  await prisma.product.update({
+    where: { id },
+    data: { status },
+  });
+  revalidatePath("/admin/tienda");
+  revalidatePath("/tienda");
   revalidatePath("/");
 }
 
@@ -221,6 +254,8 @@ export async function deleteProduct(id: string) {
   await requireAdmin();
   await prisma.product.delete({ where: { id } });
   revalidatePath("/admin/tienda");
+  revalidatePath("/tienda");
+  revalidatePath("/");
 }
 
 // --- TOURNAMENT ACTIONS ---

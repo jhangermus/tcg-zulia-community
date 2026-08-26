@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ShoppingBag, Trash2, Tag, Layers, CheckCircle2, XCircle } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 import { AdminProductForm } from "@/components/admin/AdminProductForm";
 import { deleteProduct } from "@/lib/actions";
 
@@ -70,6 +71,11 @@ export default async function AdminTiendaPage() {
                     <span className="text-xs font-black text-yellow-400">${product.price.toFixed(2)}</span>
                     <span className="text-slate-600">•</span>
                     <span className="text-xs text-slate-400 font-medium">Stock: {product.stock} unid.</span>
+                    <span className="text-slate-600">•</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      <FaWhatsapp className="w-3 h-3" />
+                      {product.whatsappNumber ? `+${product.whatsappNumber}` : "+584124721740 (Predeterminado)"}
+                    </span>
                   </div>
                   <p className="font-black text-white text-sm truncate">{product.name}</p>
                   {product.description && (
