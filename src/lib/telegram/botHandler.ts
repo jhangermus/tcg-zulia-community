@@ -14,7 +14,7 @@ import {
 } from "./auth";
 import { formatSpanishDate, formatSpanishDateFull, formatSpanishTime } from "@/lib/dateUtils";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://tcg-zulia-community.vercel.app";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://zuliatcg.com";
 
 /** Helper para generar slugs limpios */
 function slugify(text: string): string {
