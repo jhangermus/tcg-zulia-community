@@ -1,0 +1,12 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "echo 'Build skipped for Discord bot'"
+  },
+  "deploy": {
+    "startCommand": "npx tsx src/scripts/discord_news_bot.ts",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}
