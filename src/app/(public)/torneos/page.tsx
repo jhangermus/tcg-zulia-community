@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Trophy, Calendar, MapPin, Users, Award, Clock } from "lucide-react";
 import Link from "next/link";
 import { formatSpanishDate, formatSpanishDateFull, formatSpanishTime } from "@/lib/dateUtils";
+import { ShareButton } from "@/components/torneos/ShareButton";
 
 export const dynamic = "force-dynamic";
 
@@ -66,72 +67,84 @@ export default async function TorneosPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {upcomingTournaments.map((t) => (
-              <div
-                key={t.id}
-                className="bg-[#070b14] border border-slate-800 hover:border-yellow-400/60 p-6 flex flex-col justify-between transition-all group relative overflow-hidden shadow-xl clip-chamfer-tr hud-box hud-bracket-cyan"
-              >
-                {/* Tournament Banner Background Image with High Contrast Overlay */}
-                {t.bannerUrl && (
-                  <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                    <img
-                      src={t.bannerUrl}
-                      alt={t.name}
-                      className="w-full h-full object-cover opacity-60 group-hover:opacity-75 transition-all duration-500 scale-100 group-hover:scale-105"
-                      style={{ objectPosition: `center ${t.bannerPosition ?? "50"}%` }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#04070d] via-[#070b14]/70 to-[#070b14]/40" />
-                  </div>
-                )}
+            {upcomingTournaments.map((t) => {
+              const tournamentLink = t.slug ? `/torneos/${t.slug}` : "#";
+              return (
+                <div
+                  key={t.id}
+                  className="bg-[#070b14] border border-slate-800 hover:border-yellow-400/60 p-6 flex flex-col justify-between transition-all group relative overflow-hidden shadow-xl clip-chamfer-tr hud-box hud-bracket-cyan"
+                >
+                  {/* Tournament Banner Background Image with High Contrast Overlay */}
+                  {t.bannerUrl && (
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                      <img
+                        src={t.bannerUrl}
+                        alt={t.name}
+                        className="w-full h-full object-cover opacity-60 group-hover:opacity-75 transition-all duration-500 scale-100 group-hover:scale-105"
+                        style={{ objectPosition: `center ${t.bannerPosition ?? "50"}%` }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#04070d] via-[#070b14]/70 to-[#070b14]/40" />
+                    </div>
+                  )}
 
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-slate-800 text-yellow-400 border border-yellow-400/30 clip-tag-angled shadow">
-                      {t.tcg.name}
-                    </span>
-                    <span className="text-[9px] font-black text-blue-400 bg-blue-500/10 px-2.5 py-0.5 border border-blue-500/20 clip-tag-chevron shadow">
-                      {t.status === "ONGOING" ? "EN CURSO" : "PRÓXIMO"}
-                    </span>
-                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-slate-800 text-yellow-400 border border-yellow-400/30 clip-tag-angled shadow">
+                        {t.tcg.name}
+                      </span>
+                      <span className="text-[9px] font-black text-blue-400 bg-blue-500/10 px-2.5 py-0.5 border border-blue-500/20 clip-tag-chevron shadow">
+                        {t.status === "ONGOING" ? "EN CURSO" : "PRÓXIMO"}
+                      </span>
+                    </div>
 
-                  <h3 className="text-2xl font-black italic text-white group-hover:text-yellow-400 transition-colors mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] [text-shadow:_0_1px_3px_#000000]">
-                    {t.name}
-                  </h3>
+                    <h3 className="text-2xl font-black italic text-white group-hover:text-yellow-400 transition-colors mb-4 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] [text-shadow:_0_1px_3px_#000000]">
+                      {t.slug ? (
+                        <Link href={tournamentLink} className="hover:underline">
+                          {t.name}
+                        </Link>
+                      ) : (
+                        t.name
+                      )}
+                    </h3>
 
-                  <div className="space-y-2.5 text-xs font-semibold text-slate-200 mb-6 bg-[#0c1220]/95 backdrop-blur-md p-4 border border-slate-700/80 shadow-lg">
-                    <div className="flex items-center gap-2.5 text-white">
-                      <Calendar className="w-4 h-4 text-yellow-400 flex-shrink-0" />
-                      <span className="font-bold">{formatSpanishDateFull(t.date)}</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-slate-200">
-                      <Clock className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                      <span>Hora: {formatSpanishTime(t.date)}</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-slate-200">
-                      <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                      <span>{t.location || "Maracaibo, Zulia"}</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-slate-200">
-                      <Users className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                      <span>Cupo: {t.participantsCount > 0 ? `${t.participantsCount} jugadores` : "Abierto"}</span>
-                    </div>
-                    {t.prize && (
-                      <div className="flex items-center gap-2.5 text-yellow-400 font-bold">
-                        <Award className="w-4 h-4 text-yellow-400 flex-shrink-0" />
-                        <span>Premio: {t.prize}</span>
+                    <div className="space-y-2.5 text-xs font-semibold text-slate-200 mb-6 bg-[#0c1220]/95 backdrop-blur-md p-4 border border-slate-700/80 shadow-lg">
+                      <div className="flex items-center gap-2.5 text-white">
+                        <Calendar className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                        <span className="font-bold">{formatSpanishDateFull(t.date)}</span>
                       </div>
-                    )}
+                      <div className="flex items-center gap-2.5 text-slate-200">
+                        <Clock className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <span>Hora: {formatSpanishTime(t.date)}</span>
+                      </div>
+                      <div className="flex items-center gap-2.5 text-slate-200">
+                        <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <span>{t.location || "Maracaibo, Zulia"}</span>
+                      </div>
+                      <div className="flex items-center gap-2.5 text-slate-200">
+                        <Users className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <span>Cupo: {t.participantsCount > 0 ? `${t.participantsCount} jugadores` : "Abierto"}</span>
+                      </div>
+                      {t.prize && (
+                        <div className="flex items-center gap-2.5 text-yellow-400 font-bold">
+                          <Award className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                          <span>Premio: {t.prize}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="relative z-10 flex items-center gap-2">
+                    <Link
+                      href="/comunidad"
+                      className="flex-1 text-center bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black py-3 text-xs transition-colors tracking-widest clip-btn-tactical shadow-lg shadow-yellow-400/20"
+                    >
+                      REGISTRARSE
+                    </Link>
+                    <ShareButton slug={t.slug} name={t.name} compact />
                   </div>
                 </div>
-
-                <Link
-                  href="/comunidad"
-                  className="relative z-10 w-full text-center bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black py-3 text-xs transition-colors tracking-widest clip-btn-tactical shadow-lg shadow-yellow-400/20"
-                >
-                  REGISTRARSE AL TORNEO
-                </Link>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
@@ -234,13 +247,14 @@ export default async function TorneosPage() {
                       )}
                     </div>
 
-                    <div className="flex gap-2 mt-4 pt-3 border-t border-slate-800/80">
+                    <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-800/80">
                       <Link
-                        href="/decks"
+                        href={t.slug ? `/torneos/${t.slug}` : "/decks"}
                         className="flex-1 text-center bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-xs py-2.5 transition-all tracking-wider clip-btn-tactical"
                       >
-                        VER TOP DECKS
+                        VER RESULTADOS Y DETALLES
                       </Link>
+                      <ShareButton slug={t.slug} name={t.name} compact />
                     </div>
                   </div>
                 </div>

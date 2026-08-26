@@ -225,6 +225,30 @@ export async function deleteProduct(id: string) {
 
 // --- TOURNAMENT ACTIONS ---
 
+/** Generates a URL-safe slug from a string */
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // strip accents: á→a, é→e, etc.
+    .replace(/[^a-z0-9\s-]/g, "")   // remove non-alphanumeric except spaces/hyphens
+    .trim()
+    .replace(/\s+/g, "-")            // spaces → hyphens
+    .replace(/-+/g, "-");            // collapse multiple hyphens
+}
+
+/** Returns a unique slug, appending -2 / -3 etc. if there's a collision */
+async function uniqueSlug(base: string, excludeId?: string): Promise<string> {
+  let slug = slugify(base);
+  let suffix = 1;
+  while (true) {
+    const existing = await prisma.tournament.findUnique({ where: { slug } });
+    if (!existing || existing.id === excludeId) return slug;
+    suffix++;
+    slug = `${slugify(base)}-${suffix}`;
+  }
+}
+
 const TournamentSchema = z.object({
   name: z.string().min(1),
   date: z.string().min(1),
@@ -256,7 +280,8 @@ export async function createTournament(formData: FormData) {
   if (!validated.success) return { error: "Datos inválidos" };
 
   const { date, ...rest } = validated.data;
-  await prisma.tournament.create({ data: { ...rest, date: new Date(date) } });
+  const slug = await uniqueSlug(rest.name);
+  await prisma.tournament.create({ data: { ...rest, slug, date: new Date(date) } });
   revalidatePath("/admin/torneos");
   revalidatePath("/torneos");
   revalidatePath("/");
@@ -284,12 +309,19 @@ export async function updateTournament(formData: FormData) {
   if (!validated.success) return { error: "Datos inválidos" };
 
   const { date, ...rest } = validated.data;
+  // Keep existing slug if name unchanged, regenerate if name changed
+  const existing = await prisma.tournament.findUnique({ where: { id } });
+  const slug = existing?.name === rest.name && existing?.slug
+    ? existing.slug
+    : await uniqueSlug(rest.name, id);
+
   await prisma.tournament.update({
     where: { id },
-    data: { ...rest, date: new Date(date) },
+    data: { ...rest, slug, date: new Date(date) },
   });
   revalidatePath("/admin/torneos");
   revalidatePath("/torneos");
+  revalidatePath(`/torneos/${slug}`);
   revalidatePath("/");
   return { success: true };
 }

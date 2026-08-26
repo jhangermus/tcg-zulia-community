@@ -12,11 +12,11 @@ export default async function ComunidadPage() {
 
   // Convert siteConfigs to dictionary
   const socials: Record<string, string> = {
-    instagram_url: "https://instagram.com/zulia_tcg",
-    tiktok_url: "https://tiktok.com/@zulia_tcg",
+    instagram_url: "https://instagram.com/zuliatcg",
+    tiktok_url: "https://tiktok.com/@zuliatcg",
     discord_url: "https://discord.gg/zulia-tcg",
-    youtube_url: "https://youtube.com/@zulia_tcg",
-    whatsapp_group_url: "https://chat.whatsapp.com/sample",
+    youtube_url: "https://youtube.com/@zuliatcg",
+    whatsapp_group_url: "https://chat.whatsapp.com/ISd4g8VFx0eKklvwXurGRM",
   };
 
   for (const c of siteConfigs) {

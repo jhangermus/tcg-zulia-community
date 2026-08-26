@@ -53,6 +53,7 @@ model News {
 model Tournament {
   id          String   @id @default(cuid())
   name        String
+  slug        String?  @unique // URL-safe slug generado del nombre
   date        DateTime
   location    String?
   prize       String?

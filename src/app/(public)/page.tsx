@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Calendar, MapPin, Trophy, Users, Award, Flame, ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatSpanishDate, formatSpanishDateFull, formatSpanishDateTime } from "@/lib/dateUtils";
+import { ShareButton } from "@/components/torneos/ShareButton";
 
 export const dynamic = "force-dynamic";
 
@@ -139,12 +140,17 @@ export default async function Home() {
             )}
           </div>
 
-          <Link
-            href="/torneos"
-            className="relative z-10 w-full text-center bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black py-3.5 text-sm transition-colors tracking-widest mt-6 clip-btn-tactical shadow-lg shadow-yellow-400/20"
-          >
-            VER CALENDARIO
-          </Link>
+          <div className="relative z-10 flex items-center gap-2 mt-6">
+            <Link
+              href={nextTournament?.slug ? `/torneos/${nextTournament.slug}` : "/torneos"}
+              className="flex-1 text-center bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black py-3.5 text-sm transition-colors tracking-widest clip-btn-tactical shadow-lg shadow-yellow-400/20"
+            >
+              VER DETALLES Y CALENDARIO
+            </Link>
+            {nextTournament && (
+              <ShareButton slug={nextTournament.slug} name={nextTournament.name} compact />
+            )}
+          </div>
         </div>
       </div>
 
