@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:push": "npx prisma db push",
     "db:seed": "npx tsx seed.ts",
-    "db:studio": "npx prisma studio"
+    "db:studio": "npx prisma studio",
+    "discord:bot": "npx tsx src/scripts/discord_news_bot.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
@@ -26,6 +27,7 @@
     "better-sqlite3": "^13.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "discord.js": "^14.27.0",
     "lucide-react": "^1.33.0",
     "next": "16.3.2",
     "next-auth": "^5.0.0-beta.25",
