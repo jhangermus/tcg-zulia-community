@@ -25,7 +25,7 @@ const TARGET_CHANNEL_IDS = (process.env.DISCORD_LEAKS_CHANNEL_IDS || "")
   .map((s) => s.trim())
   .filter(Boolean);
 const API_URL = process.env.AUTO_POST_URL || "https://zuliatcg.com/api/news/auto-post";
-const API_SECRET = process.env.AUTO_POST_SECRET || "zulia-tcg-auto-news-secret-2024";
+const API_SECRET = process.env.AUTO_POST_SECRET || "";
 
 if (!DISCORD_BOT_TOKEN) {
   console.error("❌ ERROR: Falta DISCORD_BOT_TOKEN en el .env");

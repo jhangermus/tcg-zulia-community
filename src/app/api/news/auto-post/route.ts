@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
-const AUTO_POST_SECRET = process.env.AUTO_POST_SECRET || "zulia-tcg-auto-news-secret-2024";
+const AUTO_POST_SECRET = process.env.AUTO_POST_SECRET || "";
 
 /**
  * POST /api/news/auto-post

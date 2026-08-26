@@ -1,4 +1,4 @@
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8908699341:AAFnwaC4ddEpD-HoCdjSh-WvQ55xoCOJisU";
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_API_BASE = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
 export interface InlineKeyboardButton {

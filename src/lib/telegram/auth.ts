@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-const SUPERADMIN_ID = process.env.TELEGRAM_SUPERADMIN_ID || "798260230";
+const SUPERADMIN_ID = process.env.TELEGRAM_SUPERADMIN_ID || "";
 
 /** Verifica si un ID de Telegram está autorizado como Administrador */
 export async function isAuthorizedAdmin(telegramId: string | number): Promise<{
