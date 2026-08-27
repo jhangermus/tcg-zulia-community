@@ -192,6 +192,30 @@ async function handleMessage(msg: any) {
     return;
   }
 
+  // /flyer o /flyers - Generador de Flyers
+  if (text.startsWith("/flyer") || text === "🎨 Generador de Flyers" || text === "🎨 Generar Flyer") {
+    await sendTelegramMessage(
+      chatId,
+      `🎨 <b>Generador Automático de Flyers HD (1080 × 1350)</b>\n\n` +
+      `Crea pósters de torneos para <b>One Piece</b>, <b>Yu-Gi-Oh!</b> y <b>Digimon</b> con vista previa en tiempo real y descarga nítida para Instagram y WhatsApp.\n\n` +
+      `✨ <b>Características:</b>\n` +
+      `• Modo libre o auto-completado desde torneos de tu web\n` +
+      `• Logos oficiales de TCG de alto contraste\n` +
+      `• Subida de arte con zoom y encuadre vertical\n` +
+      `• Presets de sede para Oracle Gaming y Zulia TCG\n\n` +
+      `🔗 <b>Abrir Generador:</b> ${APP_URL}/admin/torneos/flyers`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🎨 Abrir Generador de Flyers", url: `${APP_URL}/admin/torneos/flyers` }],
+            [{ text: "⬅️ Volver al Menú", callback_data: "menu_main" }],
+          ],
+        },
+      }
+    );
+    return;
+  }
+
   // /ranking - Resumen de jugadores
   if (text.startsWith("/ranking") || text === "👥 Jugadores & Ranking") {
     await sendRankingSummary(chatId);
@@ -204,7 +228,8 @@ async function handleMessage(msg: any) {
     `👋 Hola <b>${auth.name}</b>. Comandos disponibles:\n\n` +
     `🏆 <b>Torneos:</b>\n` +
     `• /torneos - Ver torneos activos y cambiar estado\n` +
-    `• /nuevo_torneo - Crear nuevo torneo\n\n` +
+    `• /nuevo_torneo - Crear nuevo torneo\n` +
+    `• /flyer - Generador de flyers en alta definición\n\n` +
     `🛍️ <b>Tienda y Mercancía:</b>\n` +
     `• /tienda - Ver catálogo, stock y estados\n` +
     `• /crear_producto - Publicar accesorio o producto\n\n` +
@@ -228,8 +253,8 @@ async function sendMainMenu(chatId: number, auth: { name: string; isSuperAdmin: 
       { text: "➕ Nuevo Torneo", callback_data: "menu_new_tournament" },
     ],
     [
-      { text: "🛍️ Tienda y Productos", callback_data: "menu_products" },
-      { text: "➕ Nuevo Producto", callback_data: "prod_new" },
+      { text: "🎨 Generador de Flyers HD", url: `${APP_URL}/admin/torneos/flyers` },
+      { text: "🛍️ Tienda / Mercancía", callback_data: "menu_products" },
     ],
     [
       { text: "📰 Noticias", callback_data: "menu_news" },
@@ -558,9 +583,10 @@ async function sendTournamentDetail(chatId: number, tournamentId: string) {
       { text: "📷 Subir Foto Podio", callback_data: `t_podium_${t.id}` },
       { text: "🖼️ Subir Banner", callback_data: `t_banner_${t.id}` },
     ],
-    // Enlace público
+    // Acciones y Enlaces
     [
-      { text: "🔗 Abrir en la Web", url: webLink },
+      { text: "🎨 Generar Flyer HD", url: `${APP_URL}/admin/torneos/flyers` },
+      { text: "🔗 Ver en la Web", url: webLink },
     ],
     [
       { text: "⬅️ Volver a Lista de Torneos", callback_data: "menu_tournaments" },

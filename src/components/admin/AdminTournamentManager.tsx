@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import Link from "next/link";
 import {
   Trophy, Plus, Trash2, Edit3, X, Upload, Calendar,
-  MapPin, Users, Award, Image as ImageIcon, Check, PenTool
+  MapPin, Users, Award, Image as ImageIcon, Check, PenTool, Sparkles
 } from "lucide-react";
 import { createTournament, updateTournament, deleteTournament } from "@/lib/actions";
 
@@ -107,13 +107,22 @@ export function AdminTournamentManager({
   return (
     <div ref={formTopRef} className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-          <Trophy className="text-yellow-400 w-8 h-8" /> Gestión de Torneos y Fotos de Ganadores
-        </h1>
-        <p className="text-slate-400 mt-1 font-medium">
-          Crea torneos, carga las fotos del podio/campeón de tu tienda y administra las decklists de los tops.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+            <Trophy className="text-yellow-400 w-8 h-8" /> Gestión de Torneos y Fotos de Ganadores
+          </h1>
+          <p className="text-slate-400 mt-1 font-medium">
+            Crea torneos, carga las fotos del podio/campeón de tu tienda y administra las decklists de los tops.
+          </p>
+        </div>
+
+        <Link
+          href="/admin/torneos/flyers"
+          className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black px-5 py-2.5 rounded-lg text-xs tracking-wider shadow-lg shadow-yellow-400/20 transition-all hover:scale-105 self-start md:self-auto"
+        >
+          <Sparkles className="w-4 h-4" /> GENERADOR DE FLYERS HD
+        </Link>
       </div>
 
       {/* Form Box */}
@@ -496,6 +505,15 @@ export function AdminTournamentManager({
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-wrap shrink-0">
+                    <Link
+                      href={`/admin/torneos/flyers`}
+                      className="bg-purple-500/10 hover:bg-purple-600 hover:text-white text-purple-400 border border-purple-500/30 text-xs font-black px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
+                      title="Crear Flyer de Torneo"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Flyer HD
+                    </Link>
+
                     <Link
                       href={`/admin/decks?tournamentId=${t.id}&tcgId=${t.tcgId}`}
                       className="bg-yellow-400/10 hover:bg-yellow-400 hover:text-slate-950 text-yellow-400 border border-yellow-400/30 text-xs font-black px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
