@@ -75,6 +75,35 @@ export async function sendTelegramPhoto(
   }
 }
 
+/** Enviar foto desde un Buffer binario (Flyer generado) */
+export async function sendTelegramPhotoBuffer(
+  chatId: number | string,
+  buffer: Buffer,
+  caption?: string,
+  filename: string = "flyer-torneo.png"
+) {
+  if (!BOT_TOKEN) return null;
+
+  try {
+    const formData = new FormData();
+    formData.append("chat_id", String(chatId));
+    formData.append("photo", new Blob([new Uint8Array(buffer)], { type: "image/png" }), filename);
+    if (caption) {
+      formData.append("caption", caption);
+      formData.append("parse_mode", "HTML");
+    }
+
+    const res = await fetch(`${TELEGRAM_API_BASE}/sendPhoto`, {
+      method: "POST",
+      body: formData,
+    });
+    return await res.json();
+  } catch (error) {
+    console.error("Error sending telegram photo buffer:", error);
+    return null;
+  }
+}
+
 /** Responder a una pulsación de botón inline (Callback Query) */
 export async function answerTelegramCallbackQuery(
   callbackQueryId: string,

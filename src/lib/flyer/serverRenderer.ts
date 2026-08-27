@@ -1,35 +1,9 @@
-export interface FlyerOptions {
-  tcgSlug: "one-piece" | "yugioh" | "digimon" | string;
-  title: string;
-  cost: string;
-  venueKey: "oracle" | "zulia" | "custom" | string;
-  venueName?: string;
-  venueAddress?: string;
-  prizeTitle: string;
-  prizeSubtitle?: string;
-  dateMonth: string;
-  dateDay: string;
-  dateTime: string;
-  bgImageUrl?: string | null;
-  bgZoom?: number; // 100 to 250 (default 100)
-  bgPosY?: number; // 0 to 100 (default 50)
-  bgPosX?: number; // 0 to 100 (default 50)
-}
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+import fs from "fs";
+import path from "path";
 
-/** Carga una imagen de forma asíncrona en el navegador */
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = (e) => reject(e);
-    img.src = src;
-  });
-}
-
-/** Dibuja texto con salto de línea automático */
 function wrapText(
-  ctx: CanvasRenderingContext2D,
+  ctx: any,
   text: string,
   x: number,
   y: number,
@@ -57,18 +31,17 @@ function wrapText(
 }
 
 /** Dibuja el logo vectorial del TCG en alta definición */
-function drawTcgLogo(ctx: CanvasRenderingContext2D, tcgSlug: string, cx: number, cy: number) {
+function drawTcgLogo(ctx: any, tcgSlug: string, cx: number, cy: number) {
   ctx.save();
   ctx.translate(cx, cy);
 
   if (tcgSlug === "one-piece" || tcgSlug.includes("piece")) {
     // ─── ONE PIECE CARD GAME LOGO ───
-    // Sombra exterior
     ctx.shadowColor = "rgba(0,0,0,0.9)";
     ctx.shadowBlur = 10;
     ctx.shadowOffsetY = 4;
 
-    // Calavera / Jolly Roger
+    // Calavera
     ctx.fillStyle = "#000000";
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 3;
@@ -77,7 +50,7 @@ function drawTcgLogo(ctx: CanvasRenderingContext2D, tcgSlug: string, cx: number,
     ctx.fill();
     ctx.stroke();
 
-    // Huesos cruzados
+    // Huesos
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 4;
     ctx.beginPath();
@@ -96,7 +69,7 @@ function drawTcgLogo(ctx: CanvasRenderingContext2D, tcgSlug: string, cx: number,
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Cara calavera
+    // Cara
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
     ctx.arc(-145, -6, 12, 0, Math.PI * 2);
@@ -190,27 +163,40 @@ function drawTcgLogo(ctx: CanvasRenderingContext2D, tcgSlug: string, cx: number,
   ctx.restore();
 }
 
-/** Renderiza el flyer en el canvas del navegador con la plantilla oficial de Canva */
-export async function renderTournamentFlyer(
-  canvas: HTMLCanvasElement,
-  options: FlyerOptions
-): Promise<void> {
+export async function generateFlyerBuffer(options: {
+  tcgSlug: string;
+  title?: string;
+  cost?: string;
+  venueName?: string;
+  venueAddress?: string;
+  prizeTitle?: string;
+  prizeSubtitle?: string;
+  dateMonth?: string;
+  dateDay?: string;
+  dateTime?: string;
+  bgImagePathOrUrl?: string;
+  bgBuffer?: Buffer;
+  bgZoom?: number;
+  bgPosY?: number;
+  bgPosX?: number;
+}): Promise<Buffer> {
   const W = 1080;
   const H = 1350;
 
-  canvas.width = W;
-  canvas.height = H;
+  const canvas = createCanvas(W, H);
   const ctx = canvas.getContext("2d");
-  if (!ctx) return;
 
-  // 1. Fondo Negro Base
+  // 1. Fondo Negro
   ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, W, H);
 
-  // 2. Capa de Fondo (Ilustración de la Carta / Personaje)
-  if (options.bgImageUrl) {
+  // 2. Imagen del Personaje / Carta (Detrás del marco)
+  if (options.bgBuffer || options.bgImagePathOrUrl) {
     try {
-      const bgImg = await loadImage(options.bgImageUrl);
+      const bgImg = options.bgBuffer 
+        ? await loadImage(options.bgBuffer) 
+        : await loadImage(options.bgImagePathOrUrl!);
+
       const zoom = (options.bgZoom ?? 100) / 100;
       const posY = (options.bgPosY ?? 50) / 100;
       const posX = (options.bgPosX ?? 50) / 100;
@@ -224,23 +210,22 @@ export async function renderTournamentFlyer(
       const offsetY = (targetH - scaledH) * posY;
 
       ctx.drawImage(bgImg, offsetX, offsetY, scaledW, scaledH);
-    } catch (err) {
-      console.warn("No se pudo cargar imagen de fondo:", err);
+    } catch (e) {
+      console.warn("No se pudo cargar la imagen de fondo:", e);
     }
   }
 
-  // 3. Marco Oficial de Canva con degradado y cajas doradas
-  try {
-    const frameImg = await loadImage("/flyers/template_oracle_transparent.png");
+  // 3. Marco Oficial de Canva con transparencia
+  const framePath = path.join(process.cwd(), "public/flyers/template_oracle_transparent.png");
+  if (fs.existsSync(framePath)) {
+    const frameImg = await loadImage(framePath);
     ctx.drawImage(frameImg, 0, 0, W, H);
-  } catch (e) {
-    console.warn("Cargando plantilla fallback");
   }
 
-  // 4. Logo Oficial del TCG
-  drawTcgLogo(ctx, options.tcgSlug, W / 2, 600);
+  // 4. Logo Oficial del TCG (One Piece / Yu-Gi-Oh / Digimon)
+  drawTcgLogo(ctx, options.tcgSlug || "one-piece", W / 2, 600);
 
-  // 5. Título del Torneo (si es personalizado)
+  // 5. Título del Torneo (Sobreescribe sobre la barra con fondo si es necesario)
   if (options.title && options.title !== "TORNEO AVANZADO") {
     ctx.fillStyle = "#000000";
     ctx.fillRect(180, 705, 720, 45);
@@ -251,24 +236,28 @@ export async function renderTournamentFlyer(
     ctx.fillText(options.title.toUpperCase(), W / 2, 738);
   }
 
-  // 6. Texto Caja 1: COSTO DE INSCRIPCIÓN ($5)
+  // 6. Texto Caja 1: COSTO DE INSCRIPCIÓN
   ctx.fillStyle = "#ffcc00";
   ctx.font = "900 80px 'Arial Black', Impact, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(options.cost || "$5", 175, 930);
 
   // 7. Texto Caja 2: LUGAR
-  const venueName = options.venueName || "ORACLE GAMING";
-  const venueAddress = options.venueAddress || "Av. Circunvalación 2, Frente a URBE, Local 52 Av. 15P, al lado de Librería Aeropuerto, Maracaibo.";
-
   ctx.fillStyle = "#ffffff";
   ctx.font = "900 22px 'Arial Black', Impact, sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText(venueName, 335, 825);
+  ctx.fillText(options.venueName || "ORACLE GAMING", 335, 825);
 
   ctx.fillStyle = "#cbd5e1";
   ctx.font = "600 14px 'Arial', sans-serif";
-  wrapText(ctx, `Encuéntranos en: ${venueAddress}`, 335, 855, 330, 19);
+  wrapText(
+    ctx,
+    `Encuéntranos en: ${options.venueAddress || "Av. Circunvalación 2, Frente a URBE, Local 52 Av. 15P, al lado de Librería Aeropuerto, Maracaibo."}`,
+    335,
+    855,
+    330,
+    19
+  );
 
   // 8. Texto Caja 3: PREMIOS
   ctx.fillStyle = "#ffffff";
@@ -278,10 +267,9 @@ export async function renderTournamentFlyer(
 
   ctx.fillStyle = "#94a3b8";
   ctx.font = "600 13px 'Arial', sans-serif";
-  const subText = options.prizeSubtitle || "(PREMIACIÓN PENSADA PARA UN AFORO DE 12 PERSONAS)";
-  wrapText(ctx, subText, 725, 910, 290, 18);
+  wrapText(ctx, options.prizeSubtitle || "(PREMIACIÓN PENSADA PARA UN AFORO DE 12 PERSONAS)", 725, 910, 290, 18);
 
-  // 9. Barra de Fecha y Hora
+  // 9. Barra de Fecha
   const month = (options.dateMonth || "AGOSTO").toUpperCase();
   const day = options.dateDay || "30";
   const time = (options.dateTime || "11:30 AM").toUpperCase();
@@ -317,4 +305,6 @@ export async function renderTournamentFlyer(
   ctx.font = "900 32px 'Arial Black', Impact, sans-serif";
   ctx.fillStyle = "#ffffff";
   ctx.fillText(time, sX, 1145);
+
+  return canvas.toBuffer("image/png");
 }

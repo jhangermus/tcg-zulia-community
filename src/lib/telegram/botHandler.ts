@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import {
   sendTelegramMessage,
   sendTelegramPhoto,
+  sendTelegramPhotoBuffer,
   answerTelegramCallbackQuery,
   getTelegramFileAsDataUri,
   InlineKeyboardButton,
@@ -13,6 +14,7 @@ import {
   listTelegramAdmins,
 } from "./auth";
 import { formatSpanishDate, formatSpanishDateFull, formatSpanishTime } from "@/lib/dateUtils";
+import { generateFlyerBuffer } from "@/lib/flyer/serverRenderer";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://zuliatcg.com";
 
@@ -216,6 +218,80 @@ async function handleMessage(msg: any) {
     return;
   }
 
+  // /crear_flyer [TCG] | [Título] | [Costo] | [Fecha Mes Día Hora] | [Lugar] | [Premio]
+  if (text.startsWith("/crear_flyer")) {
+    const raw = text.replace("/crear_flyer", "").trim();
+    if (!raw) {
+      await sendTelegramMessage(
+        chatId,
+        `🎨 <b>Crear Flyer Instantáneo en Telegram</b>\n\n` +
+        `Formato del comando:\n` +
+        `<code>/crear_flyer one-piece | TORNEO AVANZADO | $5 | AGOSTO 30 11:30 AM | Oracle Gaming | ¡REPARTO AL TOP 4!</code>\n\n` +
+        `💡 <i>Tip: Si envías una <b>foto</b> con este texto en el pie de foto (caption), el bot usará esa imagen como arte de fondo.</i>`
+      );
+      return;
+    }
+
+    const parts: string[] = raw.split("|").map((p: string) => p.trim());
+    const tcg = (parts[0] || "one-piece").toLowerCase();
+    const title = parts[1] || "TORNEO AVANZADO";
+    const cost = parts[2] || "$5";
+    const dateStr = parts[3] || "AGOSTO 30 11:30 AM";
+    const venue = parts[4] || "ORACLE GAMING";
+    const prize = parts[5] || "¡REPARTO AL TOP 4!";
+
+    const dateParts = dateStr.split(" ");
+    const month = dateParts[0] || "AGOSTO";
+    const day = dateParts[1] || "30";
+    const time = dateParts.slice(2).join(" ") || "11:30 AM";
+
+    let bgBuffer: Buffer | undefined;
+    if (msg.photo && msg.photo.length > 0) {
+      const bestPhoto = msg.photo[msg.photo.length - 1];
+      const dataUri = await getTelegramFileAsDataUri(bestPhoto.file_id);
+      if (dataUri && dataUri.includes(",")) {
+        const base64Data = dataUri.split(",")[1];
+        bgBuffer = Buffer.from(base64Data, "base64");
+      }
+    }
+
+    await sendTelegramMessage(chatId, "🎨 <i>Generando flyer en alta resolución con Canva...</i>");
+
+    try {
+      const buffer = await generateFlyerBuffer({
+        tcgSlug: tcg,
+        title,
+        cost,
+        venueName: venue.toUpperCase(),
+        venueAddress: venue.toLowerCase().includes("oracle")
+          ? "Av. Circunvalación 2, Frente a URBE, Local 52 Av. 15P, al lado de Librería Aeropuerto, Maracaibo."
+          : "Maracaibo, Estado Zulia",
+        prizeTitle: prize,
+        prizeSubtitle: "(PREMIACIÓN PENSADA PARA UN AFORO DE 12 PERSONAS)",
+        dateMonth: month,
+        dateDay: day,
+        dateTime: time,
+        bgBuffer,
+      });
+
+      await sendTelegramPhotoBuffer(
+        chatId,
+        buffer,
+        `🎨 <b>Flyer HD Generado</b>\n\n` +
+        `🎮 <b>Juego:</b> ${tcg.toUpperCase()}\n` +
+        `🏆 <b>Evento:</b> ${title}\n` +
+        `💵 <b>Costo:</b> ${cost}\n` +
+        `📅 <b>Fecha:</b> ${month} ${day} - ${time}\n` +
+        `📍 <b>Sede:</b> ${venue}\n` +
+        `🎁 <b>Premio:</b> ${prize}`
+      );
+    } catch (err) {
+      console.error(err);
+      await sendTelegramMessage(chatId, "❌ Error al generar el flyer.");
+    }
+    return;
+  }
+
   // /ranking - Resumen de jugadores
   if (text.startsWith("/ranking") || text === "👥 Jugadores & Ranking") {
     await sendRankingSummary(chatId);
@@ -409,6 +485,65 @@ async function handleCallbackQuery(cb: any) {
     return;
   }
 
+  // Generar Flyer directo al chat de Telegram: `t_flyer_<id>`
+  if (data.startsWith("t_flyer_")) {
+    const tId = data.replace("t_flyer_", "");
+    await answerTelegramCallbackQuery(cbId, "🎨 Generando Flyer HD...", false);
+
+    const t = await prisma.tournament.findUnique({
+      where: { id: tId },
+      include: { tcg: true },
+    });
+
+    if (!t) {
+      await sendTelegramMessage(chatId, "❌ Torneo no encontrado.");
+      return;
+    }
+
+    const d = new Date(t.date);
+    const months = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+    const month = months[d.getMonth()] || "AGOSTO";
+    const day = String(d.getDate());
+
+    let hours = d.getHours();
+    const minutes = d.getMinutes();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+    const minStr = minutes < 10 ? `0${minutes}` : String(minutes);
+    const timeStr = `${hours}:${minStr} ${ampm}`;
+
+    try {
+      const buffer = await generateFlyerBuffer({
+        tcgSlug: t.tcg.slug,
+        title: t.name.toUpperCase(),
+        cost: "$5",
+        venueName: "ORACLE GAMING",
+        venueAddress: t.location || "Av. Circunvalación 2, Frente a URBE, Local 52 Av. 15P, al lado de Librería Aeropuerto, Maracaibo.",
+        prizeTitle: t.prize || "¡REPARTO AL TOP 4!",
+        prizeSubtitle: "(PREMIACIÓN PENSADA PARA UN AFORO DE 12 PERSONAS)",
+        dateMonth: month,
+        dateDay: day,
+        dateTime: timeStr,
+        bgImagePathOrUrl: t.bannerUrl || undefined,
+      });
+
+      await sendTelegramPhotoBuffer(
+        chatId,
+        buffer,
+        `🎨 <b>Flyer Oficial HD - ${t.name}</b>\n\n` +
+        `🎮 <b>Juego:</b> ${t.tcg.name}\n` +
+        `📅 <b>Fecha:</b> ${month} ${day} - ${timeStr}\n` +
+        `📍 <b>Lugar:</b> ${t.location || "Oracle Gaming"}\n` +
+        `🎁 <b>Premio:</b> ${t.prize || "¡Reparto al Top 4!"}\n\n` +
+        `<i>Generado con la plantilla oficial en alta resolución.</i>`
+      );
+    } catch (err) {
+      console.error("Error generando flyer en Telegram:", err);
+      await sendTelegramMessage(chatId, "❌ Error al generar el flyer.");
+    }
+    return;
+  }
+
   // Revocar admin: `admin_remove_<id>`
   if (data.startsWith("admin_remove_")) {
     const tidToRemove = data.replace("admin_remove_", "");
@@ -585,10 +720,11 @@ async function sendTournamentDetail(chatId: number, tournamentId: string) {
     ],
     // Acciones y Enlaces
     [
-      { text: "🎨 Generar Flyer HD", url: `${APP_URL}/admin/torneos/flyers` },
+      { text: "🎨 Enviar Flyer a este Chat", callback_data: `t_flyer_${t.id}` },
       { text: "🔗 Ver en la Web", url: webLink },
     ],
     [
+      { text: "🎨 Abrir Generador Web", url: `${APP_URL}/admin/torneos/flyers` },
       { text: "⬅️ Volver a Lista de Torneos", callback_data: "menu_tournaments" },
     ],
   ];
