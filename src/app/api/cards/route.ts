@@ -89,7 +89,7 @@ export async function GET(request: Request) {
           id: c.id,
           name: c.name,
           type: `${c.category || 'Card'}${c.colors ? ` • ${c.colors.join('/')}` : ''}`,
-          image_url: c.img ? `/api/proxy-image?url=${encodeURIComponent(c.img)}` : \'\',
+          image_url: c.img ? `/api/proxy-image?url=${encodeURIComponent(c.img)}` : '',
           slot: isLeader ? 'leader' : 'main',
         };
       });
@@ -140,7 +140,7 @@ export async function GET(request: Request) {
           id: c.id,
           name: c.name,
           type: `${isEgg ? 'Digi-Egg' : c.type || 'Digimon'}${c.color ? ` • ${c.color}` : ''}`,
-          image_url: c.img ? `/api/proxy-image?url=${encodeURIComponent(c.img)}` : \'\',
+          image_url: c.img ? `/api/proxy-image?url=${encodeURIComponent(c.img)}` : '',
           slot: isEgg ? 'egg' : 'main',
         };
       });
