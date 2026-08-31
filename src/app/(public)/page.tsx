@@ -3,6 +3,7 @@ import { Calendar, MapPin, Trophy, Users, Award, Flame, ArrowRight } from "lucid
 import { prisma } from "@/lib/prisma";
 import { formatSpanishDate, formatSpanishDateFull, formatSpanishDateTime } from "@/lib/dateUtils";
 import { ShareButton } from "@/components/torneos/ShareButton";
+import RankingTabs from "@/components/home/RankingTabs";
 
 export const dynamic = "force-dynamic";
 

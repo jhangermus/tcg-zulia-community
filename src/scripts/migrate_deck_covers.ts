@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 async function migrateDeckCovers() {
   console.log("Fetching decklists without coverImageUrl...");
@@ -45,7 +43,4 @@ async function migrateDeckCovers() {
 }
 
 migrateDeckCovers()
-  .catch(e => console.error(e))
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .catch(e => console.error(e));
