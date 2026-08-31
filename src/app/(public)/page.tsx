@@ -335,66 +335,48 @@ async function RankingPreview() {
 
   const decklists = await prisma.decklist.findMany({
     where: { isRecommended: false, placement: { gt: 0 } },
-    select: { playerName: true, placement: true, coverImageUrl: true, deckData: true },
+    select: { 
+      playerName: true, 
+      placement: true, 
+      coverImageUrl: true,
+      tcg: {
+        select: { slug: true, name: true }
+      }
+    },
     orderBy: { createdAt: "desc" },
   });
 
-  const playerMap: Record<string, { pts: number; coverUrl?: string | null }> = {};
+  const rankingsByTcg: Record<string, Record<string, { pts: number; coverUrl?: string | null }>> = {};
+  const tcgNames: Record<string, string> = {};
+
   for (const d of decklists) {
     const rawName = d.playerName.trim();
     if (!rawName) continue;
-    const pts = POINTS[d.placement] ?? (d.placement <= 8 ? 25 : 10);
-    if (!playerMap[rawName]) {
-      let cover = d.coverImageUrl;
-      if (!cover) {
-        try {
-          const parsed = JSON.parse(d.deckData);
-          cover = parsed.main?.[0]?.image_url || parsed.extra?.[0]?.image_url;
-        } catch (e) {}
-      }
-      playerMap[rawName] = { pts: 0, coverUrl: cover };
+    
+    const tcgSlug = d.tcg.slug;
+    tcgNames[tcgSlug] = d.tcg.name;
+    
+    if (!rankingsByTcg[tcgSlug]) {
+      rankingsByTcg[tcgSlug] = {};
     }
-    playerMap[rawName].pts += pts;
+
+    const pts = POINTS[d.placement] ?? (d.placement <= 8 ? 25 : 10);
+    
+    if (!rankingsByTcg[tcgSlug][rawName]) {
+      rankingsByTcg[tcgSlug][rawName] = { pts: 0, coverUrl: d.coverImageUrl };
+    }
+    
+    rankingsByTcg[tcgSlug][rawName].pts += pts;
   }
 
-  const sorted = Object.entries(playerMap)
-    .map(([name, data]) => ({ name, ...data }))
-    .sort((a, b) => b.pts - a.pts)
-    .slice(0, 5);
-
-  if (sorted.length === 0) {
-    return <p className="text-slate-300 text-sm text-center py-6 font-semibold">Sin datos de ranking aún</p>;
+  const sortedRankings: Record<string, any[]> = {};
+  
+  for (const tcgSlug in rankingsByTcg) {
+    sortedRankings[tcgSlug] = Object.entries(rankingsByTcg[tcgSlug])
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.pts - a.pts)
+      .slice(0, 5);
   }
 
-  const colors = ["text-yellow-400", "text-slate-200", "text-amber-400", "text-slate-300", "text-slate-400"];
-
-  return (
-    <div className="space-y-3.5">
-      {sorted.map((p, i) => (
-        <Link
-          key={p.name}
-          href={`/jugador/${encodeURIComponent(p.name)}`}
-          className="flex items-center justify-between py-1 border-b border-slate-800/80 pb-2 hover:bg-slate-800/30 transition-colors group cursor-pointer"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <span className={`font-black text-sm w-6 ${colors[i]}`}>{String(i + 1).padStart(2, "0")}</span>
-            {/* Player Avatar / Deck Cover Thumbnail */}
-            <div className="w-9 h-9 rounded-sm bg-[#0c1220] border border-slate-700 overflow-hidden flex items-center justify-center shrink-0 shadow">
-              {p.coverUrl ? (
-                <img src={p.coverUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-              ) : (
-                <span className="text-xs font-black text-yellow-400 uppercase">
-                  {p.name.substring(0, 2)}
-                </span>
-              )}
-            </div>
-            <span className="font-black text-sm text-white group-hover:text-yellow-400 transition-colors truncate max-w-[120px]">
-              {p.name}
-            </span>
-          </div>
-          <span className="text-sm text-yellow-400 font-black shrink-0">{p.pts} pts</span>
-        </Link>
-      ))}
-    </div>
-  );
+  return <RankingTabs rankings={sortedRankings} tcgNames={tcgNames} />;
 }

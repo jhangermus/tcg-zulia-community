@@ -10,7 +10,9 @@
     "db:push": "npx prisma db push",
     "db:seed": "npx tsx seed.ts",
     "db:studio": "npx prisma studio",
-    "discord:bot": "npx tsx src/scripts/discord_news_bot.ts"
+    "discord:bot": "npx tsx src/scripts/discord_news_bot.ts",
+    "sync:cards": "npx tsx src/scripts/sync_cards.ts",
+    "migrate:covers": "npx tsx src/scripts/migrate_deck_covers.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
