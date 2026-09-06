@@ -7,6 +7,7 @@ import {
   MapPin, Users, Award, Image as ImageIcon, Check, PenTool, Sparkles
 } from "lucide-react";
 import { createTournament, updateTournament, deleteTournament } from "@/lib/actions";
+import { compressImage } from "@/lib/imageCompressor";
 
 export interface AdminTournamentItem {
   id: string;
@@ -54,32 +55,35 @@ export function AdminTournamentManager({
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
   const formTopRef = useRef<HTMLDivElement>(null);
 
-  const handlePhotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 4 * 1024 * 1024) {
-      alert("La foto del torneo no debe pesar más de 4MB");
-      return;
+    try {
+      // Comprime y redimensiona a máx 1200px y calidad 0.75 en WebP
+      const compressed = await compressImage(file, 1200, 1200, 0.75);
+      setPhotoPreview(compressed);
+    } catch (err) {
+      console.error("Error comprimiendo foto:", err);
+      // Fallback a lectura directa si falla
+      const reader = new FileReader();
+      reader.onloadend = () => setPhotoPreview(reader.result as string);
+      reader.readAsDataURL(file);
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPhotoPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
   };
 
-  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBannerFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 4 * 1024 * 1024) {
-      alert("La imagen banner del torneo no debe pesar más de 4MB");
-      return;
+    try {
+      // El banner se redimensiona a formato panorámico (máx 1400px ancho)
+      const compressed = await compressImage(file, 1400, 800, 0.75);
+      setBannerPreview(compressed);
+    } catch (err) {
+      console.error("Error comprimiendo banner:", err);
+      const reader = new FileReader();
+      reader.onloadend = () => setBannerPreview(reader.result as string);
+      reader.readAsDataURL(file);
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setBannerPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleStartEdit = (t: AdminTournamentItem) => {
