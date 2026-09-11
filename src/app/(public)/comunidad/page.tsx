@@ -16,7 +16,7 @@ export default async function ComunidadPage() {
     tiktok_url: "https://tiktok.com/@zuliatcg",
     discord_url: "https://discord.gg/zulia-tcg",
     youtube_url: "https://youtube.com/@zuliatcg",
-    whatsapp_group_url: "https://chat.whatsapp.com/ISd4g8VFx0eKklvwXurGRM",
+    whatsapp_group_url: "https://chat.whatsapp.com/HK7yYROVrAVGvVjd1h1Nhd",
   };
 
   for (const c of siteConfigs) {

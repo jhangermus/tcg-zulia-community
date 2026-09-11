@@ -383,12 +383,7 @@ export function AdminDeckBuilder({
       return;
     }
 
-    if (mainDeck.length === 0) {
-      alert("Debes agregar al menos una carta al mazo antes de guardar.");
-      return;
-    }
-
-    // Default cover image to first card in main or extra if still empty
+    // Allow empty main deck if it's a top entry where the decklist will be built later
     const finalCoverImage = coverImageUrl || mainDeck[0]?.image_url || extraDeck[0]?.image_url || "";
 
     setIsSaving(true);
@@ -1056,6 +1051,26 @@ export function AdminDeckBuilder({
                         <span className="text-[10px] font-bold text-slate-400 uppercase">
                           {d.tcg.name}
                         </span>
+                        {(() => {
+                          try {
+                            const parsed = JSON.parse(d.deckData || "{}");
+                            const total = (parsed.main?.length || 0) + (parsed.extra?.length || 0);
+                            if (total === 0) {
+                              return (
+                                <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded">
+                                  ⏳ Decklist Pendiente
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="text-[10px] text-slate-500 font-medium">
+                                ({total} cartas)
+                              </span>
+                            );
+                          } catch {
+                            return null;
+                          }
+                        })()}
                       </div>
                       <h3 className="font-black text-white text-sm truncate">{d.deckName || "Deck Sin Nombre"}</h3>
                       <p className="text-xs text-slate-400">

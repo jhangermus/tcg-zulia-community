@@ -515,7 +515,7 @@ export async function updateDecklist(formData: FormData) {
 }
 
 // Helper to recalculate a player's total ranking points
-async function recalculatePlayerPoints(playerId: string) {
+export async function recalculatePlayerPoints(playerId: string) {
   try {
     const playerDecks = await prisma.decklist.findMany({
       where: {

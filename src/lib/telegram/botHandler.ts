@@ -15,6 +15,7 @@ import {
 } from "./auth";
 import { formatSpanishDate, formatSpanishDateFull, formatSpanishTime } from "@/lib/dateUtils";
 import { generateFlyerBuffer } from "@/lib/flyer/serverRenderer";
+import { recalculatePlayerPoints } from "@/lib/actions";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://zuliatcg.com";
 

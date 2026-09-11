@@ -283,8 +283,14 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
                   <h4 className="text-xs font-black text-white uppercase tracking-wider mb-3 flex items-center gap-2">
                     <Layers className="w-4 h-4 text-yellow-400" /> MAIN DECK ({activeModalDeck.deckData.main.length})
                   </h4>
-                  <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2">
-                    {activeModalDeck.deckData.main.map((card, i) => (
+                  {activeModalDeck.deckData.main.length === 0 ? (
+                    <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 text-center text-slate-400 text-xs">
+                      <p className="font-bold text-slate-300">⏳ Lista de cartas pendiente por subir.</p>
+                      <p className="text-[11px] text-slate-500 mt-1">El top y resultado oficial ya están confirmados y sumados al ranking.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                      {activeModalDeck.deckData.main.map((card, i) => (
                       <div
                         key={`${card.id}-${i}`}
                         onMouseEnter={() => setHoveredCard(card)}
@@ -301,7 +307,8 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
                         </div>
                       </div>
                     ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Extra / Líder / Digi-Egg */}
