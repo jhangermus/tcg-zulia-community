@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Gamepad2, Trophy, Newspaper,
@@ -33,13 +34,24 @@ export function AdminSidebar() {
   return (
     <aside className="w-64 bg-[#0a0e17] flex-shrink-0 border-r border-slate-800 h-screen sticky top-0 flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-slate-800">
-        <Link href="/" className="block mb-1">
-          <h1 className="text-2xl font-black italic tracking-tighter text-white">
-            ZULIA <span className="text-yellow-400">TCG</span>
-          </h1>
+      <div className="p-5 border-b border-slate-800">
+        <Link href="/" className="flex items-center gap-3 mb-1 group">
+          <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 border border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.3)] bg-black">
+            <Image
+              src="/logo.jpg"
+              alt="Zulia TCG"
+              width={36}
+              height={36}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+            />
+          </div>
+          <div>
+            <h1 className="text-xl font-black italic tracking-tighter text-white leading-none">
+              ZULIA <span className="text-yellow-400">TCG</span>
+            </h1>
+            <span className="text-[9px] font-bold tracking-widest text-slate-500 uppercase block mt-0.5">ADMIN PANEL</span>
+          </div>
         </Link>
-        <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Panel de Administración</span>
       </div>
 
       {/* Navigation */}

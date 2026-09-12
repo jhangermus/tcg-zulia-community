@@ -232,7 +232,22 @@
 
 /* Tactical Background Pattern */
 .bg-tactical-grid {
-  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-image: linear-gradient(to right, rgba(250, 204, 21, 0.03) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(250, 204, 21, 0.03) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Electric Gold Neon Glows Matching New Logo */
+.text-electric-gold {
+  color: #facc15;
+  text-shadow: 0 0 10px rgba(250, 204, 21, 0.7), 0 0 20px rgba(234, 179, 8, 0.5), 0 0 35px rgba(202, 138, 4, 0.3);
+}
+
+.box-electric-gold {
+  box-shadow: 0 0 15px rgba(250, 204, 21, 0.25), inset 0 0 15px rgba(250, 204, 21, 0.1);
+}
+
+.border-electric-gold {
+  border-color: rgba(250, 204, 21, 0.6);
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.3);
 }

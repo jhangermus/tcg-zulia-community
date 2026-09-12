@@ -95,6 +95,12 @@ async function handleMessage(msg: any) {
     return;
   }
 
+  // Si tiene sesión activa para cargar tops
+  if (session && session.step === "AWAITING_TOPS_INPUT" && text && text !== "/cancelar") {
+    await handleTournamentTopsSubmission(chatId, fromId, text, session);
+    return;
+  }
+
   // Si envió /cancelar
   if (text === "/cancelar" || text === "❌ Cancelar") {
     if (session) {
@@ -144,6 +150,12 @@ async function handleMessage(msg: any) {
   // /crear_torneo [TCG] | [Nombre] | [Fecha] | [Lugar] | [Premio]
   if (text.startsWith("/crear_torneo")) {
     await handleQuickCreateTournament(chatId, text);
+    return;
+  }
+
+  // /cargar_top o /top - Instrucciones para registrar podio/top 4
+  if (text.startsWith("/cargar_top") || text.startsWith("/top")) {
+    await sendTopInstructionsPrompt(chatId);
     return;
   }
 
@@ -447,6 +459,38 @@ async function handleCallbackQuery(cb: any) {
     return;
   }
 
+  // Cargar Top 4 (Jugadores): `t_top_<id>`
+  if (data.startsWith("t_top_")) {
+    const tId = data.replace("t_top_", "");
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: tId },
+      include: { tcg: true },
+    });
+
+    if (!tournament) {
+      await answerTelegramCallbackQuery(cbId, "Torneo no encontrado.", true);
+      return;
+    }
+
+    await prisma.telegramSession.upsert({
+      where: { telegramId: String(fromId) },
+      update: { step: "AWAITING_TOPS_INPUT", data: JSON.stringify({ tournamentId: tId, tcgId: tournament.tcgId }) },
+      create: { telegramId: String(fromId), step: "AWAITING_TOPS_INPUT", data: JSON.stringify({ tournamentId: tId, tcgId: tournament.tcgId }) },
+    });
+
+    await answerTelegramCallbackQuery(cbId);
+    await sendTelegramMessage(
+      chatId,
+      `👑 <b>Cargar Top 4 - ${tournament.name} (${tournament.tcg.name})</b>\n\n` +
+      `Envía los nombres de los jugadores del top (puedes incluir el nombre del deck entre paréntesis o con guión).\n\n` +
+      `📝 <b>Formato admitido (1 por línea o separados por coma):</b>\n` +
+      `<code>1. William Perez (Snake-Eye)\n2. Andrés Peña (Tenpai)\n3. Carlos Rivas (Voiceless)\n4. Javier Soto (Branded)</code>\n\n` +
+      `💡 <i>Nota: No necesitas cargar la lista de cartas ahora; las posiciones y puntos se sumarán al ranking de inmediato y luego podrás armar el decklist en la web desde la PC.</i>\n\n` +
+      `<i>Escribe /cancelar para anular.</i>`
+    );
+    return;
+  }
+
   // Subir foto podio: `t_podium_<id>`
   if (data.startsWith("t_podium_")) {
     const tId = data.replace("t_podium_", "");
@@ -704,6 +748,18 @@ async function sendTournamentDetail(chatId: number, tournamentId: string) {
     `👥 <b>Cupo:</b> ${t.participantsCount > 0 ? `${t.participantsCount} duelistas` : "Abierto"}\n` +
     `📊 <b>Estado Actual:</b> <b>${statusText}</b>\n` +
     (top1 ? `👑 <b>Campeón:</b> ${top1.playerName}\n` : "") +
+    (t.decklists && t.decklists.length > 0
+      ? `\n🏅 <b>Resultados del Top Registrado:</b>\n` +
+        t.decklists
+          .map(
+            (d) =>
+              `• <b>Top ${d.placement}:</b> ${d.playerName} ${
+                d.deckName ? `(<i>${d.deckName}</i>)` : ""
+              }`
+          )
+          .join("\n") +
+        `\n`
+      : "") +
     (t.photoUrl ? `📷 <i>Tiene foto de podio cargada</i>\n` : "") +
     (t.bannerUrl ? `🖼️ <i>Tiene banner personalizado</i>\n` : "");
 
@@ -713,6 +769,10 @@ async function sendTournamentDetail(chatId: number, tournamentId: string) {
       { text: t.status === "UPCOMING" ? "✓ Próximo" : "🔵 Próximo", callback_data: `t_status_${t.id}_UPCOMING` },
       { text: t.status === "ONGOING" ? "✓ En Juego" : "🟡 En Juego", callback_data: `t_status_${t.id}_ONGOING` },
       { text: t.status === "COMPLETED" ? "✓ Finalizado" : "🟢 Finalizado", callback_data: `t_status_${t.id}_COMPLETED` },
+    ],
+    // Cargar Tops directamente desde Telegram
+    [
+      { text: "👑 Cargar Top 4 (Jugadores)", callback_data: `t_top_${t.id}` },
     ],
     // Subir Fotos
     [
@@ -1308,6 +1368,208 @@ async function handleCreateProductWithPhoto(chatId: number, text: string, imageU
       reply_markup: {
         inline_keyboard: [
           [{ text: "🛍️ Ver Lista de Productos", callback_data: "prod_list" }],
+        ],
+      },
+    }
+  );
+}
+
+/** Muestra opciones de torneos para cargar el Top 4 */
+async function sendTopInstructionsPrompt(chatId: number) {
+  const tournaments = await prisma.tournament.findMany({
+    where: { status: { in: ["ONGOING", "COMPLETED", "UPCOMING"] } },
+    include: { tcg: true },
+    orderBy: { date: "desc" },
+    take: 6,
+  });
+
+  if (tournaments.length === 0) {
+    await sendTelegramMessage(chatId, "❌ No hay torneos registrados para asignar tops.");
+    return;
+  }
+
+  const buttons: InlineKeyboardButton[][] = tournaments.map((t) => [
+    {
+      text: `🏆 [${t.tcg.name}] ${t.name.slice(0, 25)}`,
+      callback_data: `t_top_${t.id}`,
+    },
+  ]);
+
+  buttons.push([{ text: "⬅️ Volver a Torneos", callback_data: "menu_tournaments" }]);
+
+  await sendTelegramMessage(
+    chatId,
+    `👑 <b>Cargar Top de Torneo (Hasta Top 4)</b>\n\n` +
+    `Selecciona el torneo al que deseas cargar los jugadores del podio.\n\n` +
+    `💡 <i>Puedes cargar los nombres de los jugadores sin subir las cartas. Las cartas pueden armarse luego desde la PC en el Deckbuilder.</i>`,
+    { reply_markup: { inline_keyboard: buttons } }
+  );
+}
+
+/** Procesa el texto recibido con el Top 4 y crea las entradas de decklist con deckData vacío */
+async function handleTournamentTopsSubmission(
+  chatId: number,
+  fromId: number,
+  text: string,
+  session: { step: string; data: string }
+) {
+  const sessionData = JSON.parse(session.data || "{}");
+  const tournamentId = sessionData.tournamentId;
+  const tcgId = sessionData.tcgId;
+
+  if (!tournamentId) {
+    await prisma.telegramSession.delete({ where: { telegramId: String(fromId) } });
+    await sendTelegramMessage(chatId, "❌ Sesión expirada. Por favor selecciona el torneo de nuevo.");
+    return;
+  }
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    include: { tcg: true },
+  });
+
+  if (!tournament) {
+    await prisma.telegramSession.delete({ where: { telegramId: String(fromId) } });
+    await sendTelegramMessage(chatId, "❌ Torneo no encontrado.");
+    return;
+  }
+
+  // Parsear líneas o elementos separados por comas
+  // Ejemplo de líneas válidas:
+  // 1. Andrés Peña (Tenpai Dragon)
+  // 2 - Carlos Rivas
+  // Top 1: William Perez - Snake Eye
+  // Andrés Peña
+  const rawLines = text
+    .split(/\n|,/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  if (rawLines.length === 0) {
+    await sendTelegramMessage(
+      chatId,
+      "⚠️ No se detectaron jugadores. Por favor escribe al menos el 1er Lugar o envía /cancelar."
+    );
+    return;
+  }
+
+  // Estructura de posiciones 1 a 4
+  interface ParsedEntry {
+    placement: number;
+    playerName: string;
+    deckName: string;
+  }
+
+  const entries: ParsedEntry[] = [];
+
+  rawLines.slice(0, 4).forEach((line, index) => {
+    let placement = index + 1;
+    let cleanLine = line;
+
+    // Detectar si empieza con número: "1.", "1 -", "1:", "Top 1:"
+    const numMatch = cleanLine.match(/^(?:top\s*)?([1-4])\s*[\.\:\-\)]\s*(.*)$/i);
+    if (numMatch) {
+      placement = parseInt(numMatch[1], 10);
+      cleanLine = numMatch[2].trim();
+    }
+
+    // Detectar si tiene deck entre paréntesis: "Andrés Peña (Tenpai Dragon)"
+    let playerName = cleanLine;
+    let deckName = `${tournament.tcg.name} Deck`;
+
+    const parenMatch = cleanLine.match(/^(.*?)\s*\((.*?)\)$/);
+    if (parenMatch) {
+      playerName = parenMatch[1].trim();
+      deckName = parenMatch[2].trim();
+    } else {
+      // Detectar si tiene guión: "Andrés Peña - Tenpai Dragon"
+      const dashParts = cleanLine.split(/\s+-\s+|\s+—\s+/);
+      if (dashParts.length >= 2) {
+        playerName = dashParts[0].trim();
+        deckName = dashParts[1].trim();
+      }
+    }
+
+    if (playerName) {
+      entries.push({ placement, playerName, deckName });
+    }
+  });
+
+  if (entries.length === 0) {
+    await sendTelegramMessage(chatId, "❌ Formato no reconocido. Inténtalo de nuevo o envía /cancelar.");
+    return;
+  }
+
+  // Eliminar decklists previas del torneo si se están sobreescribiendo
+  await prisma.decklist.deleteMany({
+    where: { tournamentId },
+  });
+
+  const createdSummary: string[] = [];
+
+  for (const entry of entries) {
+    // 1. Buscar o crear Player
+    let player = await prisma.player.findFirst({
+      where: { name: { equals: entry.playerName, mode: "insensitive" } },
+    });
+
+    if (!player) {
+      player = await prisma.player.create({
+        data: { name: entry.playerName },
+      });
+    }
+
+    // 2. Crear Decklist con estructura inicial (cartas vacías pendientes por armar en la web)
+    const emptyDeckData = JSON.stringify({ main: [], extra: [], side: [] });
+
+    await prisma.decklist.create({
+      data: {
+        playerName: entry.playerName,
+        deckName: entry.deckName,
+        placement: entry.placement,
+        tournamentId,
+        tcgId: tcgId || tournament.tcgId,
+        deckData: emptyDeckData,
+        playerId: player.id,
+        isRecommended: false,
+      },
+    });
+
+    // 3. Recalcular puntos del jugador en el ranking automáticamente
+    await recalculatePlayerPoints(player.id);
+
+    const medal =
+      entry.placement === 1
+        ? "🥇 1er Lugar"
+        : entry.placement === 2
+        ? "🥈 2do Lugar"
+        : `🥉 Top ${entry.placement}`;
+
+    createdSummary.push(`${medal}: <b>${entry.playerName}</b> (<i>${entry.deckName}</i>)`);
+  }
+
+  // Actualizar estado del torneo a COMPLETED si estaba en UPCOMING u ONGOING
+  await prisma.tournament.update({
+    where: { id: tournamentId },
+    data: { status: "COMPLETED" },
+  });
+
+  // Limpiar sesión
+  await prisma.telegramSession.delete({ where: { telegramId: String(fromId) } });
+
+  await sendTelegramMessage(
+    chatId,
+    `🎉 <b>¡Top 4 guardado exitosamente!</b>\n\n` +
+    `🏆 <b>${tournament.name}</b> (${tournament.tcg.name})\n\n` +
+    createdSummary.join("\n") +
+    `\n\n` +
+    `⚡ <b>Los puntos se han sumado automáticamente al Ranking General.</b>\n` +
+    `💻 <i>Cuando estés en la PC, puedes entrar a <b>Publicar Tops & Decks</b> en el panel admin para cargar las listas completas de cartas con el buscador de cartas.</i>`,
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "👁️ Ver Detalle del Torneo", callback_data: `t_view_${tournamentId}` }],
+          [{ text: "🏆 Volver a Torneos", callback_data: "menu_tournaments" }],
         ],
       },
     }

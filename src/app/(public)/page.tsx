@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Calendar, MapPin, Trophy, Users, Award, Flame, ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatSpanishDate, formatSpanishDateFull, formatSpanishDateTime } from "@/lib/dateUtils";
@@ -47,36 +48,68 @@ export default async function Home() {
     <div className="p-6 md:p-8 space-y-8 bg-[#04070d] min-h-screen bg-tactical-grid">
       {/* ROW 1: Hero & Next Tournament */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Hero Banner (Tactical Chamfered with HUD accents) */}
-        <div className="xl:col-span-2 relative overflow-hidden bg-gradient-to-r from-[#001736] via-[#090f1d] to-[#04070d] border border-blue-900/60 p-8 md:p-10 flex flex-col justify-between min-h-[360px] clip-chamfer-tr shadow-2xl hud-box hud-bracket-cyan">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-600/10 via-transparent to-transparent pointer-events-none"></div>
+        {/* Hero Banner (Tactical Electric Chamfered with Logo) */}
+        <div className="xl:col-span-2 relative overflow-hidden bg-gradient-to-r from-[#000d24] via-[#090f1d] to-[#04070d] border border-yellow-500/40 p-8 md:p-10 flex flex-col md:flex-row items-center justify-between min-h-[360px] clip-chamfer-tr shadow-2xl hud-box hud-bracket-yellow group">
+          {/* Radial ambient electric glow */}
+          <div className="absolute -top-24 -left-24 w-96 h-96 bg-yellow-400/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-1/2 -right-20 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-yellow-500/10 via-transparent to-transparent pointer-events-none" />
 
-          <div className="relative z-10 w-full md:w-4/5 space-y-4">
-            <div className="inline-flex items-center gap-2 bg-yellow-400 text-slate-950 px-3.5 py-1.5 text-xs font-black tracking-widest uppercase clip-tag-angled shadow">
-              <span>★ COMUNIDAD OFICIAL ZULIA ★</span>
+          {/* Left Column: Text & Actions */}
+          <div className="relative z-10 w-full md:w-3/5 space-y-4">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 px-3.5 py-1.5 text-xs font-black tracking-widest uppercase clip-tag-angled shadow-lg shadow-yellow-400/20">
+              <span className="drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)]">★ COMUNIDAD OFICIAL ZULIA ★</span>
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter text-white drop-shadow-[0_4px_15px_rgba(0,0,0,0.8)] leading-none">
-              ZULIA <span className="text-yellow-400 drop-shadow-[0_2px_10px_rgba(250,204,21,0.5)]">TCG</span>
+            <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] leading-none">
+              ZULIA <span className="text-yellow-400 drop-shadow-[0_0_25px_rgba(250,204,21,0.6)]">TCG</span>
             </h1>
 
-            <p className="text-sm font-black text-slate-200 tracking-wider uppercase">
-              TORNEOS • TOP DECKS • RANKING • COMUNIDAD MARACAIBO
+            <p className="text-xs md:text-sm font-black text-amber-300/90 tracking-widest uppercase flex items-center gap-2">
+              <span>TORNEOS</span> • <span>TOP DECKS</span> • <span>RANKING</span> • <span>MARACAIBO</span>
             </p>
 
-            <div className="pt-4 flex flex-wrap gap-4">
+            <p className="text-xs text-slate-300 font-medium leading-relaxed max-w-lg">
+              La plataforma competitiva de Yu-Gi-Oh!, One Piece y Digimon en el Estado Zulia. Consulta rankings actualizados, resultados de torneos y análisis de metajuego local.
+            </p>
+
+            <div className="pt-3 flex flex-wrap gap-3">
               <Link
                 href="/torneos"
-                className="bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-sm px-7 py-3.5 transition-all tracking-widest clip-btn-tactical shadow-lg shadow-yellow-400/20 hover:scale-105"
+                className="bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-xs md:text-sm px-6 py-3 transition-all tracking-wider clip-btn-tactical shadow-lg shadow-yellow-400/25 hover:scale-105"
               >
                 VER PRÓXIMOS TORNEOS
               </Link>
               <Link
                 href="/decks"
-                className="bg-[#0b1222] hover:bg-slate-800 text-white font-black text-sm px-7 py-3.5 border border-slate-700 hover:border-slate-500 transition-all tracking-widest clip-btn-tactical"
+                className="bg-[#0b1222] hover:bg-slate-800 text-white font-black text-xs md:text-sm px-6 py-3 border border-yellow-500/30 hover:border-yellow-400 transition-all tracking-wider clip-btn-tactical hover:shadow-[0_0_15px_rgba(250,204,21,0.2)]"
               >
                 EXPLORAR TOP DECKS
               </Link>
+            </div>
+          </div>
+
+          {/* Right Column: Hero Visual Logo Badge */}
+          <div className="relative z-10 mt-6 md:mt-0 shrink-0 flex items-center justify-center">
+            <div className="relative w-48 h-48 md:w-56 md:h-56">
+              {/* Outer Pulsing Aura */}
+              <div className="absolute inset-0 bg-yellow-400/20 rounded-2xl blur-xl animate-pulse pointer-events-none" />
+              
+              {/* Logo Frame */}
+              <div className="relative w-full h-full rounded-2xl overflow-hidden border-2 border-yellow-400/70 shadow-[0_0_35px_rgba(250,204,21,0.4)] bg-black/90 p-1 group-hover:border-yellow-300 transition-colors">
+                <Image
+                  src="/logo.jpg"
+                  alt="Zulia TCG Official Emblem"
+                  fill
+                  sizes="(max-width: 768px) 192px, 224px"
+                  priority
+                  className="object-cover rounded-xl group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+
+              {/* Tactical Corner Accents on Logo */}
+              <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-yellow-400" />
+              <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-yellow-400" />
             </div>
           </div>
         </div>

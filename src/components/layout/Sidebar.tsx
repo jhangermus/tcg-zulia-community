@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { FaInstagram, FaDiscord, FaWhatsapp, FaYoutube, FaTiktok } from "react-icons/fa";
 import { Cinzel_Decorative, Bangers, Chakra_Petch } from "next/font/google";
 import { prisma } from "@/lib/prisma";
@@ -39,11 +40,24 @@ export async function Sidebar() {
       {/* 1. TOP: Logo & Location Modal */}
       <div className="space-y-3 shrink-0">
         <Link href="/" className="group block">
-          <div className="flex items-center gap-2">
-            <span className="text-yellow-400 text-2xl font-black">👑</span>
-            <h1 className="text-3xl font-black italic tracking-tighter text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.15)] leading-none group-hover:text-yellow-400 transition-colors">
-              ZULIA <span className="text-yellow-400 drop-shadow-[0_2px_10px_rgba(250,204,21,0.4)]">TCG</span>
-            </h1>
+          <div className="flex items-center gap-3 p-2 bg-gradient-to-r from-yellow-500/10 via-amber-500/5 to-transparent border border-yellow-500/30 rounded-xl hover:border-yellow-400 transition-all hover:shadow-[0_0_20px_rgba(250,204,21,0.25)] relative overflow-hidden">
+            <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-yellow-400/50 shadow-[0_0_12px_rgba(250,204,21,0.4)] bg-black">
+              <Image
+                src="/logo.jpg"
+                alt="Zulia TCG Logo"
+                width={48}
+                height={48}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              />
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-2xl font-black italic tracking-tighter text-white leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                ZULIA <span className="text-yellow-400 drop-shadow-[0_0_12px_rgba(250,204,21,0.6)]">TCG</span>
+              </h1>
+              <span className="text-[9px] font-black text-amber-400/90 tracking-widest uppercase mt-0.5">
+                COMUNIDAD OFICIAL
+              </span>
+            </div>
           </div>
         </Link>
 

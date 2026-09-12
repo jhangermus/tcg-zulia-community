@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
@@ -47,8 +48,19 @@ export function Navbar() {
 
       {/* Mobile Title */}
       <div className="lg:hidden flex items-center justify-between w-full">
-        <Link href="/" className="font-black italic text-xl">
-          ZULIA <span className="text-yellow-400">TCG</span>
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded overflow-hidden border border-yellow-400/60 shadow-[0_0_8px_rgba(250,204,21,0.5)] bg-black shrink-0">
+            <Image
+              src="/logo.jpg"
+              alt="Zulia TCG"
+              width={32}
+              height={32}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <span className="font-black italic text-lg tracking-tight text-white">
+            ZULIA <span className="text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]">TCG</span>
+          </span>
         </Link>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
