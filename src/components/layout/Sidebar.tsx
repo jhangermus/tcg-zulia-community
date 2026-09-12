@@ -20,7 +20,7 @@ export async function Sidebar() {
   const socials: Record<string, string> = {
     instagram_url: "https://instagram.com/zulia_tcg",
     discord_url: "https://discord.gg/zulia-tcg",
-    whatsapp_group_url: "https://chat.whatsapp.com/invite",
+    whatsapp_group_url: "https://chat.whatsapp.com/HK7yYROVrAVGvVjd1h1Nhd",
     youtube_url: "https://youtube.com/@zulia_tcg",
     tiktok_url: "https://tiktok.com/@zulia_tcg",
   };
