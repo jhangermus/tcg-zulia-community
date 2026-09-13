@@ -1,12 +1,20 @@
 import { prisma } from "@/lib/prisma";
 import { PublicRankingClient } from "@/components/ranking/PublicRankingClient";
 
-export const dynamic = "force-dynamic";
+// ISR: revalidate every 5 minutes
+export const revalidate = 300;
 
 export default async function RankingPage() {
   const [decklists, tcgs] = await Promise.all([
     prisma.decklist.findMany({
-      include: {
+      // Ranking never uses deckData — skip it entirely
+      select: {
+        id: true,
+        playerName: true,
+        deckName: true,
+        placement: true,
+        coverImageUrl: true,
+        createdAt: true,
         tcg: { select: { id: true, name: true, slug: true } },
         tournament: { select: { id: true, name: true, date: true } },
       },

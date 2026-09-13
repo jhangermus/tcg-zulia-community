@@ -4,18 +4,30 @@ import { FaInstagram, FaDiscord, FaWhatsapp, FaYoutube, FaTiktok } from "react-i
 import { Cinzel_Decorative, Bangers, Chakra_Petch } from "next/font/google";
 import { prisma } from "@/lib/prisma";
 import { LocationModal } from "./LocationModal";
+import { unstable_cache } from "next/cache";
 
 const ygoFont = Cinzel_Decorative({ weight: "700", subsets: ["latin"] });
 const opFont = Bangers({ weight: "400", subsets: ["latin"] });
 const digiFont = Chakra_Petch({ weight: "700", subsets: ["latin"] });
 
+// Cache sidebar DB data for 10 minutes — the sidebar is rendered on EVERY public page,
+// so without caching it fires 3 queries per visitor per navigation.
+const getSidebarData = unstable_cache(
+  async () => {
+    const [tournaments, siteConfigs, stores] = await Promise.all([
+      prisma.tournament.findMany({ select: { tcg: { select: { slug: true } } } }),
+      prisma.siteConfig.findMany(),
+      prisma.localStore.findMany({ orderBy: { name: "asc" } }),
+    ]);
+    return { tournaments, siteConfigs, stores };
+  },
+  ["sidebar-data"],
+  { revalidate: 600 } // 10 minutes
+);
+
 export async function Sidebar() {
   // Fetch real tournament counts per TCG, stores for location modal, and site configs
-  const [tournaments, siteConfigs, stores] = await Promise.all([
-    prisma.tournament.findMany({ select: { tcg: { select: { slug: true } } } }),
-    prisma.siteConfig.findMany(),
-    prisma.localStore.findMany({ orderBy: { name: "asc" } }),
-  ]);
+  const { tournaments, siteConfigs, stores } = await getSidebarData();
 
   const socials: Record<string, string> = {
     instagram_url: "https://instagram.com/zulia_tcg",

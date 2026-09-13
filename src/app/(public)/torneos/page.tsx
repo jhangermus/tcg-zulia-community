@@ -4,15 +4,34 @@ import Link from "next/link";
 import { formatSpanishDate, formatSpanishDateFull, formatSpanishTime } from "@/lib/dateUtils";
 import { ShareButton } from "@/components/torneos/ShareButton";
 
-export const dynamic = "force-dynamic";
+// ISR: revalidate every 5 minutes
+export const revalidate = 300;
 
 export default async function TorneosPage() {
   const [tournaments, tcgs] = await Promise.all([
     prisma.tournament.findMany({
-      include: {
-        tcg: true,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        date: true,
+        location: true,
+        status: true,
+        participantsCount: true,
+        prize: true,
+        bannerUrl: true,
+        bannerPosition: true,
+        photoUrl: true,
+        tcg: { select: { id: true, name: true, slug: true, color: true } },
         decklists: {
           orderBy: { placement: "asc" },
+          // Only fetch what the UI needs — skip heavy deckData
+          select: {
+            id: true,
+            playerName: true,
+            deckName: true,
+            placement: true,
+          },
         },
       },
     }),

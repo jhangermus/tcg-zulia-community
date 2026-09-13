@@ -2,14 +2,27 @@ import { prisma } from "@/lib/prisma";
 import { PublicDecksClient, DecklistItem } from "@/components/decks/PublicDecksClient";
 import { formatSpanishDate } from "@/lib/dateUtils";
 
-export const dynamic = "force-dynamic";
+// ISR: revalidate every 5 minutes instead of fetching on every request.
+// This stops Googlebot/crawlers from draining Neon bandwidth on every hit.
+export const revalidate = 300;
 
 export default async function DecksPage() {
   const [tcgs, dbDecklists] = await Promise.all([
     prisma.tcg.findMany({ where: { status: "ACTIVE" }, orderBy: { name: "asc" } }),
     prisma.decklist.findMany({
       where: { isRecommended: false },
-      include: { tournament: true, tcg: true },
+      // Exclude heavy deckData JSON — only fetch it per-deck via the API route when a modal is opened
+      select: {
+        id: true,
+        playerName: true,
+        deckName: true,
+        placement: true,
+        coverImageUrl: true,
+        adminNotes: true,
+        createdAt: true,
+        tournament: { select: { id: true, name: true, date: true } },
+        tcg: { select: { id: true, name: true, slug: true, color: true } },
+      },
       orderBy: { createdAt: "desc" },
     }),
   ]);
@@ -24,38 +37,22 @@ export default async function DecksPage() {
     return (a.placement || 99) - (b.placement || 99); // 1er lugar, 2do lugar...
   });
 
-  // Format real DB decklists
-  const decks: DecklistItem[] = sortedDecklists.map((d) => {
-    let parsedData = { main: [], extra: [], side: [] };
-    try {
-      if (typeof d.deckData === "string") {
-        parsedData = JSON.parse(d.deckData);
-      } else {
-        parsedData = d.deckData as any;
-      }
-    } catch (e) {
-      console.error("Error parsing deckData for deck", d.id, e);
-    }
-
-    return {
-      id: d.id,
-      playerName: d.playerName,
-      deckName: d.deckName || "Deck de Torneo",
-      placement: d.placement,
-      tournamentName: d.tournament?.name || "Torneo Oficial",
-      tournamentDate: d.tournament?.date ? formatSpanishDate(d.tournament.date) : formatSpanishDate(d.createdAt),
-      tcgName: d.tcg.name,
-      tcgSlug: d.tcg.slug,
-      tcgColor: d.tcg.color,
-      adminNotes: d.adminNotes,
-      createdAt: formatSpanishDate(d.createdAt),
-      deckData: {
-        main: parsedData.main || [],
-        extra: parsedData.extra || [],
-        side: parsedData.side || [],
-      },
-    };
-  });
+  // Format real DB decklists — deckData is loaded lazily per-deck via API
+  const decks: DecklistItem[] = sortedDecklists.map((d) => ({
+    id: d.id,
+    playerName: d.playerName,
+    deckName: d.deckName || "Deck de Torneo",
+    placement: d.placement,
+    tournamentName: d.tournament?.name || "Torneo Oficial",
+    tournamentDate: d.tournament?.date ? formatSpanishDate(d.tournament.date) : formatSpanishDate(d.createdAt),
+    tcgName: d.tcg.name,
+    tcgSlug: d.tcg.slug,
+    tcgColor: d.tcg.color,
+    adminNotes: d.adminNotes,
+    createdAt: formatSpanishDate(d.createdAt),
+    // deckData omitted here — client will fetch lazily from /api/decks/[id] on modal open
+    deckData: { main: [], extra: [], side: [] },
+  }));
 
   return (
     <div className="p-6 md:p-8 space-y-8 bg-[#05080f] min-h-screen">

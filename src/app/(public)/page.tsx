@@ -6,23 +6,42 @@ import { formatSpanishDate, formatSpanishDateFull, formatSpanishDateTime } from 
 import { ShareButton } from "@/components/torneos/ShareButton";
 import RankingTabs from "@/components/home/RankingTabs";
 
-export const dynamic = "force-dynamic";
+// ISR: revalidate every 5 minutes — prevents crawlers from hammering the DB on every request
+export const revalidate = 300;
 
 export default async function Home() {
   const [nextTournament, recentTournament, topDecks, news] = await Promise.all([
     prisma.tournament.findFirst({
       where: { status: "UPCOMING" },
-      include: { tcg: true },
+      select: {
+        id: true, name: true, slug: true, date: true, location: true,
+        participantsCount: true, prize: true, bannerUrl: true, bannerPosition: true, status: true,
+        tcg: { select: { id: true, name: true, slug: true, color: true } },
+      },
       orderBy: { date: "asc" },
     }),
     prisma.tournament.findFirst({
       where: { status: "COMPLETED" },
-      include: { tcg: true, decklists: { orderBy: { placement: "asc" }, take: 4 } },
+      select: {
+        id: true, name: true, slug: true, date: true, photoUrl: true,
+        tcg: { select: { id: true, name: true, slug: true } },
+        decklists: {
+          orderBy: { placement: "asc" },
+          take: 4,
+          // Skip deckData — we only need names and placement for the home widget
+          select: { id: true, playerName: true, deckName: true, placement: true },
+        },
+      },
       orderBy: { date: "desc" },
     }),
     prisma.decklist.findMany({
       where: { isRecommended: false, placement: { gt: 0 } },
-      include: { tcg: true, tournament: true },
+      // Only fetch coverImageUrl — no full deckData JSON blob needed for home cards
+      select: {
+        id: true, playerName: true, deckName: true, placement: true, coverImageUrl: true, createdAt: true,
+        tcg: { select: { id: true, name: true, slug: true, color: true } },
+        tournament: { select: { id: true, name: true, date: true } },
+      },
       orderBy: { createdAt: "desc" },
       take: 6,
     }),
@@ -33,16 +52,11 @@ export default async function Home() {
     }),
   ]);
 
-  // Helper to extract cover image from deck
-  const getDeckCover = (deck: { coverImageUrl?: string | null; deckData: string }) => {
-    if (deck.coverImageUrl) return deck.coverImageUrl;
-    try {
-      const parsed = JSON.parse(deck.deckData);
-      if (parsed.main && parsed.main[0]?.image_url) return parsed.main[0].image_url;
-      if (parsed.extra && parsed.extra[0]?.image_url) return parsed.extra[0].image_url;
-    } catch (e) {}
-    return null;
+  // Helper to extract cover image from deck — now only uses coverImageUrl (no JSON parse needed)
+  const getDeckCover = (deck: { coverImageUrl?: string | null }) => {
+    return deck.coverImageUrl ?? null;
   };
+
 
   return (
     <div className="p-6 md:p-8 space-y-8 bg-[#04070d] min-h-screen bg-tactical-grid">

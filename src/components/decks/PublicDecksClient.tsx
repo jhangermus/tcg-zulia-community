@@ -40,6 +40,37 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
   const [activeModalDeck, setActiveModalDeck] = useState<DecklistItem | null>(null);
   const [hoveredCard, setHoveredCard] = useState<DeckCardItem | null>(null);
   const [zoomedCard, setZoomedCard] = useState<DeckCardItem | null>(null);
+  // Lazy-loaded deckData state — only fetched when a user opens a modal
+  const [loadedDeckData, setLoadedDeckData] = useState<DecklistItem["deckData"] | null>(null);
+  const [isLoadingDeck, setIsLoadingDeck] = useState(false);
+
+  const openDeckModal = async (deck: DecklistItem) => {
+    setActiveModalDeck(deck);
+    setLoadedDeckData(null);
+    setHoveredCard(null);
+    setIsLoadingDeck(true);
+    try {
+      const res = await fetch(`/api/decks/${deck.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLoadedDeckData(data.deckData);
+        setHoveredCard(data.deckData?.main?.[0] || data.deckData?.extra?.[0] || null);
+      }
+    } catch (e) {
+      console.error("Failed to load deck data", e);
+    } finally {
+      setIsLoadingDeck(false);
+    }
+  };
+
+  const closeDeckModal = () => {
+    setActiveModalDeck(null);
+    setLoadedDeckData(null);
+    setHoveredCard(null);
+  };
+
+  // The active deck data — use lazily loaded version when available
+  const activeDeckData = loadedDeckData ?? { main: [], extra: [], side: [] };
 
   // Filter decks
   const filteredDecks = decks.filter((deck) => {
@@ -53,6 +84,7 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
     if (p <= 4) return { label: `Top 4 (#${p})`, bg: "bg-amber-600 text-white", border: "border-amber-500" };
     return { label: `Top 8 (#${p})`, bg: "bg-slate-800 text-slate-300", border: "border-slate-700" };
   };
+
 
   return (
     <div className="space-y-8">
@@ -104,9 +136,10 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
             const isYgo = !isOP && !isDigi;
 
             const extraLabel = isOP ? "Líder" : isDigi ? "Digi-Egg" : "Extra";
-            const mainCount = deck.deckData.main.length;
-            const extraCount = deck.deckData.extra.length;
-            const sideCount = deck.deckData.side.length;
+            // Card counts not available in listing — they're loaded lazily when modal opens
+            const mainCount = 0;
+            const extraCount = 0;
+            const sideCount = 0;
 
             const badgeInfo = getPlacementBadge(deck.placement);
 
@@ -122,16 +155,13 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
               ? "bg-purple-500/10 text-purple-300 border-purple-500/30"
               : "bg-blue-500/10 text-blue-400 border-blue-500/30";
 
-            // Extract key card names
-            const keyCards = deck.deckData.main.slice(0, 4);
+            // Key cards not available in listing — shown after lazy load in modal
+            const keyCards: DeckCardItem[] = [];
 
             return (
               <div
                 key={deck.id}
-                onClick={() => {
-                  setActiveModalDeck(deck);
-                  setHoveredCard(deck.deckData.main[0] || deck.deckData.extra[0] || null);
-                }}
+                onClick={() => openDeckModal(deck)}
                 className={`bg-[#070b14] border ${themeBorder} p-6 flex flex-col justify-between transition-all duration-200 cursor-pointer group shadow-xl hover:shadow-2xl hover:-translate-y-1 clip-chamfer-tr relative`}
               >
                 <div>
@@ -227,7 +257,7 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
       {activeModalDeck && (
         <div
           className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 md:p-6 overflow-y-auto"
-          onClick={() => setActiveModalDeck(null)}
+          onClick={closeDeckModal}
         >
           <div
             className="bg-[#0a0e17] border border-slate-700 rounded-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl relative"
@@ -267,7 +297,7 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
               </div>
 
               <button
-                onClick={() => setActiveModalDeck(null)}
+                onClick={closeDeckModal}
                 className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
@@ -281,16 +311,20 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
                 {/* Main Deck */}
                 <div>
                   <h4 className="text-xs font-black text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-yellow-400" /> MAIN DECK ({activeModalDeck.deckData.main.length})
+                    <Layers className="w-4 h-4 text-yellow-400" /> MAIN DECK ({activeDeckData.main.length})
                   </h4>
-                  {activeModalDeck.deckData.main.length === 0 ? (
+                  {isLoadingDeck ? (
+                    <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-8 text-center text-slate-400 text-xs animate-pulse">
+                      <p className="font-bold text-slate-300">⏳ Cargando decklist...</p>
+                    </div>
+                  ) : activeDeckData.main.length === 0 ? (
                     <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 text-center text-slate-400 text-xs">
                       <p className="font-bold text-slate-300">⏳ Lista de cartas pendiente por subir.</p>
                       <p className="text-[11px] text-slate-500 mt-1">El top y resultado oficial ya están confirmados y sumados al ranking.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2">
-                      {activeModalDeck.deckData.main.map((card, i) => (
+                      {activeDeckData.main.map((card, i) => (
                       <div
                         key={`${card.id}-${i}`}
                         onMouseEnter={() => setHoveredCard(card)}
@@ -312,7 +346,7 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
                 </div>
 
                 {/* Extra / Líder / Digi-Egg */}
-                {activeModalDeck.deckData.extra.length > 0 && (
+                {activeDeckData.extra.length > 0 && (
                   <div>
                     <h4 className="text-xs font-black text-white uppercase tracking-wider mb-3 flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-blue-400" />{" "}
@@ -321,10 +355,10 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
                         : activeModalDeck.tcgSlug.includes("digi")
                         ? "DIGI-EGG DECK"
                         : "EXTRA DECK"}{" "}
-                      ({activeModalDeck.deckData.extra.length})
+                      ({activeDeckData.extra.length})
                     </h4>
                     <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2">
-                      {activeModalDeck.deckData.extra.map((card, i) => (
+                      {activeDeckData.extra.map((card, i) => (
                         <div
                           key={`${card.id}-${i}`}
                           onMouseEnter={() => setHoveredCard(card)}
@@ -346,13 +380,13 @@ export function PublicDecksClient({ decks, tcgs }: PublicDecksClientProps) {
                 )}
 
                 {/* Side Deck */}
-                {activeModalDeck.deckData.side.length > 0 && (
+                {activeDeckData.side.length > 0 && (
                   <div>
                     <h4 className="text-xs font-black text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-purple-400" /> SIDE DECK ({activeModalDeck.deckData.side.length})
+                      <Shield className="w-4 h-4 text-purple-400" /> SIDE DECK ({activeDeckData.side.length})
                     </h4>
                     <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2">
-                      {activeModalDeck.deckData.side.map((card, i) => (
+                      {activeDeckData.side.map((card, i) => (
                         <div
                           key={`${card.id}-${i}`}
                           onMouseEnter={() => setHoveredCard(card)}
