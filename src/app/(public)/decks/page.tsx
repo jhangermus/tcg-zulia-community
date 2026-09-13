@@ -7,25 +7,31 @@ import { formatSpanishDate } from "@/lib/dateUtils";
 export const revalidate = 300;
 
 export default async function DecksPage() {
-  const [tcgs, dbDecklists] = await Promise.all([
-    prisma.tcg.findMany({ where: { status: "ACTIVE" }, orderBy: { name: "asc" } }),
-    prisma.decklist.findMany({
-      where: { isRecommended: false },
-      // Exclude heavy deckData JSON — only fetch it per-deck via the API route when a modal is opened
-      select: {
-        id: true,
-        playerName: true,
-        deckName: true,
-        placement: true,
-        coverImageUrl: true,
-        adminNotes: true,
-        createdAt: true,
-        tournament: { select: { id: true, name: true, date: true } },
-        tcg: { select: { id: true, name: true, slug: true, color: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
+  let tcgs: any[] = [];
+  let dbDecklists: any[] = [];
+
+  try {
+    [tcgs, dbDecklists] = await Promise.all([
+      prisma.tcg.findMany({ where: { status: "ACTIVE" }, orderBy: { name: "asc" } }),
+      prisma.decklist.findMany({
+        where: { isRecommended: false },
+        select: {
+          id: true,
+          playerName: true,
+          deckName: true,
+          placement: true,
+          coverImageUrl: true,
+          adminNotes: true,
+          createdAt: true,
+          tournament: { select: { id: true, name: true, date: true } },
+          tcg: { select: { id: true, name: true, slug: true, color: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
+  } catch (err) {
+    console.error("[Decks] DB unavailable:", err);
+  }
 
   // Sort decks primarily by tournament date (most recent tournament first), then by placement (1st, 2nd, 3rd...)
   const sortedDecklists = [...dbDecklists].sort((a, b) => {

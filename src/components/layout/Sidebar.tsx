@@ -14,12 +14,17 @@ const digiFont = Chakra_Petch({ weight: "700", subsets: ["latin"] });
 // so without caching it fires 3 queries per visitor per navigation.
 const getSidebarData = unstable_cache(
   async () => {
-    const [tournaments, siteConfigs, stores] = await Promise.all([
-      prisma.tournament.findMany({ select: { tcg: { select: { slug: true } } } }),
-      prisma.siteConfig.findMany(),
-      prisma.localStore.findMany({ orderBy: { name: "asc" } }),
-    ]);
-    return { tournaments, siteConfigs, stores };
+    try {
+      const [tournaments, siteConfigs, stores] = await Promise.all([
+        prisma.tournament.findMany({ select: { tcg: { select: { slug: true } } } }),
+        prisma.siteConfig.findMany(),
+        prisma.localStore.findMany({ orderBy: { name: "asc" } }),
+      ]);
+      return { tournaments, siteConfigs, stores };
+    } catch (err) {
+      console.error("[Sidebar] DB unavailable:", err);
+      return { tournaments: [], siteConfigs: [], stores: [] };
+    }
   },
   ["sidebar-data"],
   { revalidate: 600 } // 10 minutes

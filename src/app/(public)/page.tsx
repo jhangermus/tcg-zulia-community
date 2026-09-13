@@ -10,47 +10,56 @@ import RankingTabs from "@/components/home/RankingTabs";
 export const revalidate = 300;
 
 export default async function Home() {
-  const [nextTournament, recentTournament, topDecks, news] = await Promise.all([
-    prisma.tournament.findFirst({
-      where: { status: "UPCOMING" },
-      select: {
-        id: true, name: true, slug: true, date: true, location: true,
-        participantsCount: true, prize: true, bannerUrl: true, bannerPosition: true, status: true,
-        tcg: { select: { id: true, name: true, slug: true, color: true } },
-      },
-      orderBy: { date: "asc" },
-    }),
-    prisma.tournament.findFirst({
-      where: { status: "COMPLETED" },
-      select: {
-        id: true, name: true, slug: true, date: true, photoUrl: true,
-        tcg: { select: { id: true, name: true, slug: true } },
-        decklists: {
-          orderBy: { placement: "asc" },
-          take: 4,
-          // Skip deckData — we only need names and placement for the home widget
-          select: { id: true, playerName: true, deckName: true, placement: true },
+  // Wrap in try/catch so the build doesn't fail if the DB is temporarily unavailable
+  let nextTournament = null;
+  let recentTournament = null;
+  let topDecks: any[] = [];
+  let news: any[] = [];
+
+  try {
+    [nextTournament, recentTournament, topDecks, news] = await Promise.all([
+      prisma.tournament.findFirst({
+        where: { status: "UPCOMING" },
+        select: {
+          id: true, name: true, slug: true, date: true, location: true,
+          participantsCount: true, prize: true, bannerUrl: true, bannerPosition: true, status: true,
+          tcg: { select: { id: true, name: true, slug: true, color: true } },
         },
-      },
-      orderBy: { date: "desc" },
-    }),
-    prisma.decklist.findMany({
-      where: { isRecommended: false, placement: { gt: 0 } },
-      // Only fetch coverImageUrl — no full deckData JSON blob needed for home cards
-      select: {
-        id: true, playerName: true, deckName: true, placement: true, coverImageUrl: true, createdAt: true,
-        tcg: { select: { id: true, name: true, slug: true, color: true } },
-        tournament: { select: { id: true, name: true, date: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 6,
-    }),
-    prisma.news.findMany({
-      where: { published: true },
-      orderBy: { createdAt: "desc" },
-      take: 3,
-    }),
-  ]);
+        orderBy: { date: "asc" },
+      }),
+      prisma.tournament.findFirst({
+        where: { status: "COMPLETED" },
+        select: {
+          id: true, name: true, slug: true, date: true, photoUrl: true,
+          tcg: { select: { id: true, name: true, slug: true } },
+          decklists: {
+            orderBy: { placement: "asc" },
+            take: 4,
+            select: { id: true, playerName: true, deckName: true, placement: true },
+          },
+        },
+        orderBy: { date: "desc" },
+      }),
+      prisma.decklist.findMany({
+        where: { isRecommended: false, placement: { gt: 0 } },
+        select: {
+          id: true, playerName: true, deckName: true, placement: true, coverImageUrl: true, createdAt: true,
+          tcg: { select: { id: true, name: true, slug: true, color: true } },
+          tournament: { select: { id: true, name: true, date: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      }),
+      prisma.news.findMany({
+        where: { published: true },
+        orderBy: { createdAt: "desc" },
+        take: 3,
+      }),
+    ]);
+  } catch (err) {
+    console.error("[Home] DB unavailable during build/render:", err);
+    // Site renders with empty data — will retry when ISR revalidates after DB is restored
+  }
 
   // Helper to extract cover image from deck — now only uses coverImageUrl (no JSON parse needed)
   const getDeckCover = (deck: { coverImageUrl?: string | null }) => {

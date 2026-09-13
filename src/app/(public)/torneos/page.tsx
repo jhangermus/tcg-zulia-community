@@ -8,35 +8,41 @@ import { ShareButton } from "@/components/torneos/ShareButton";
 export const revalidate = 300;
 
 export default async function TorneosPage() {
-  const [tournaments, tcgs] = await Promise.all([
-    prisma.tournament.findMany({
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        date: true,
-        location: true,
-        status: true,
-        participantsCount: true,
-        prize: true,
-        bannerUrl: true,
-        bannerPosition: true,
-        photoUrl: true,
-        tcg: { select: { id: true, name: true, slug: true, color: true } },
-        decklists: {
-          orderBy: { placement: "asc" },
-          // Only fetch what the UI needs — skip heavy deckData
-          select: {
-            id: true,
-            playerName: true,
-            deckName: true,
-            placement: true,
+  let tournaments: any[] = [];
+  let tcgs: any[] = [];
+
+  try {
+    [tournaments, tcgs] = await Promise.all([
+      prisma.tournament.findMany({
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          date: true,
+          location: true,
+          status: true,
+          participantsCount: true,
+          prize: true,
+          bannerUrl: true,
+          bannerPosition: true,
+          photoUrl: true,
+          tcg: { select: { id: true, name: true, slug: true, color: true } },
+          decklists: {
+            orderBy: { placement: "asc" },
+            select: {
+              id: true,
+              playerName: true,
+              deckName: true,
+              placement: true,
+            },
           },
         },
-      },
-    }),
-    prisma.tcg.findMany({ where: { status: "ACTIVE" }, orderBy: { name: "asc" } }),
-  ]);
+      }),
+      prisma.tcg.findMany({ where: { status: "ACTIVE" }, orderBy: { name: "asc" } }),
+    ]);
+  } catch (err) {
+    console.error("[Torneos] DB unavailable:", err);
+  }
 
   const now = new Date().getTime();
 
@@ -183,7 +189,7 @@ export default async function TorneosPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {pastTournaments.map((t) => {
-              const champion = t.decklists.find((d) => d.placement === 1);
+              const champion = t.decklists.find((d: any) => d.placement === 1);
               const topList = t.decklists.slice(0, 4);
 
               return (
@@ -244,7 +250,7 @@ export default async function TorneosPage() {
                       {/* Tops Placements */}
                       {topList.length > 0 ? (
                         <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-slate-300">
-                          {topList.map((d, i) => (
+                          {topList.map((d: any, i: number) => (
                             <div key={d.id} className="flex items-center gap-2">
                               <span
                                 className={`w-4 h-4 rounded-sm flex items-center justify-center text-[8px] font-black ${

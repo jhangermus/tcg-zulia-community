@@ -5,27 +5,33 @@ import { PublicRankingClient } from "@/components/ranking/PublicRankingClient";
 export const revalidate = 300;
 
 export default async function RankingPage() {
-  const [decklists, tcgs] = await Promise.all([
-    prisma.decklist.findMany({
-      // Ranking never uses deckData — skip it entirely
-      select: {
-        id: true,
-        playerName: true,
-        deckName: true,
-        placement: true,
-        coverImageUrl: true,
-        createdAt: true,
-        tcg: { select: { id: true, name: true, slug: true } },
-        tournament: { select: { id: true, name: true, date: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.tcg.findMany({
-      where: { status: "ACTIVE" },
-      select: { id: true, name: true, slug: true },
-      orderBy: { name: "asc" },
-    }),
-  ]);
+  let decklists: any[] = [];
+  let tcgs: any[] = [];
+
+  try {
+    [decklists, tcgs] = await Promise.all([
+      prisma.decklist.findMany({
+        select: {
+          id: true,
+          playerName: true,
+          deckName: true,
+          placement: true,
+          coverImageUrl: true,
+          createdAt: true,
+          tcg: { select: { id: true, name: true, slug: true } },
+          tournament: { select: { id: true, name: true, date: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.tcg.findMany({
+        where: { status: "ACTIVE" },
+        select: { id: true, name: true, slug: true },
+        orderBy: { name: "asc" },
+      }),
+    ]);
+  } catch (err) {
+    console.error("[Ranking] DB unavailable:", err);
+  }
 
   return (
     <div className="p-6 md:p-8 space-y-8 bg-[#04070d] min-h-screen bg-tactical-grid">
