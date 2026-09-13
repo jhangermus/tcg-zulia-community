@@ -390,18 +390,23 @@ export default async function Home() {
 async function RankingPreview() {
   const POINTS: Record<number, number> = { 1: 100, 2: 75, 3: 50, 4: 50 };
 
-  const decklists = await prisma.decklist.findMany({
-    where: { isRecommended: false, placement: { gt: 0 } },
-    select: { 
-      playerName: true, 
-      placement: true, 
-      coverImageUrl: true,
-      tcg: {
-        select: { slug: true, name: true }
-      }
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  let decklists: any[] = [];
+  try {
+    decklists = await prisma.decklist.findMany({
+      where: { isRecommended: false, placement: { gt: 0 } },
+      select: { 
+        playerName: true, 
+        placement: true, 
+        coverImageUrl: true,
+        tcg: {
+          select: { slug: true, name: true }
+        }
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (err) {
+    console.error("[RankingPreview] DB unavailable:", err);
+  }
 
   const rankingsByTcg: Record<string, Record<string, { pts: number; coverUrl?: string | null }>> = {};
   const tcgNames: Record<string, string> = {};
