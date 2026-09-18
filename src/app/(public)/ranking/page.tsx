@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { PublicRankingClient } from "@/components/ranking/PublicRankingClient";
 
-// ISR: revalidate every 5 minutes
-export const revalidate = 300;
+// Dynamic rendering — 0 Vercel ISR writes
+export const dynamic = "force-dynamic";
 
 export default async function RankingPage() {
   let decklists: any[] = [];

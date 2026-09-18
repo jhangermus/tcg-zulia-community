@@ -4,8 +4,8 @@ import Link from "next/link";
 import { formatSpanishDate, formatSpanishDateFull, formatSpanishTime } from "@/lib/dateUtils";
 import { ShareButton } from "@/components/torneos/ShareButton";
 
-// ISR: revalidate every 5 minutes
-export const revalidate = 300;
+// Dynamic rendering — 0 Vercel ISR writes
+export const dynamic = "force-dynamic";
 
 export default async function TorneosPage() {
   let tournaments: any[] = [];

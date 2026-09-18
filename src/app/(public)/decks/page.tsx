@@ -2,9 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { PublicDecksClient, DecklistItem } from "@/components/decks/PublicDecksClient";
 import { formatSpanishDate } from "@/lib/dateUtils";
 
-// ISR: revalidate every 5 minutes instead of fetching on every request.
-// This stops Googlebot/crawlers from draining Neon bandwidth on every hit.
-export const revalidate = 300;
+// Dynamic rendering — 0 Vercel ISR writes
+export const dynamic = "force-dynamic";
 
 export default async function DecksPage() {
   let tcgs: any[] = [];

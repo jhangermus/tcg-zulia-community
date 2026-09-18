@@ -6,8 +6,8 @@ import { formatSpanishDate, formatSpanishDateFull, formatSpanishDateTime } from 
 import { ShareButton } from "@/components/torneos/ShareButton";
 import RankingTabs from "@/components/home/RankingTabs";
 
-// ISR: revalidate every 5 minutes — prevents crawlers from hammering the DB on every request
-export const revalidate = 300;
+// Dynamic rendering — 0 Vercel ISR writes, fast lightweight queries
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
   // Wrap in try/catch so the build doesn't fail if the DB is temporarily unavailable

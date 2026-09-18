@@ -4,31 +4,34 @@ import { FaInstagram, FaDiscord, FaWhatsapp, FaYoutube, FaTiktok } from "react-i
 import { Cinzel_Decorative, Bangers, Chakra_Petch } from "next/font/google";
 import { prisma } from "@/lib/prisma";
 import { LocationModal } from "./LocationModal";
-import { unstable_cache } from "next/cache";
-
 const ygoFont = Cinzel_Decorative({ weight: "700", subsets: ["latin"] });
 const opFont = Bangers({ weight: "400", subsets: ["latin"] });
 const digiFont = Chakra_Petch({ weight: "700", subsets: ["latin"] });
 
-// Cache sidebar DB data for 10 minutes — the sidebar is rendered on EVERY public page,
-// so without caching it fires 3 queries per visitor per navigation.
-const getSidebarData = unstable_cache(
-  async () => {
-    try {
-      const [tournaments, siteConfigs, stores] = await Promise.all([
-        prisma.tournament.findMany({ select: { tcg: { select: { slug: true } } } }),
-        prisma.siteConfig.findMany(),
-        prisma.localStore.findMany({ orderBy: { name: "asc" } }),
-      ]);
-      return { tournaments, siteConfigs, stores };
-    } catch (err) {
-      console.error("[Sidebar] DB unavailable:", err);
-      return { tournaments: [], siteConfigs: [], stores: [] };
-    }
-  },
-  ["sidebar-data"],
-  { revalidate: 600 } // 10 minutes
-);
+// In-memory cache for sidebar data with 10-minute TTL
+// This eliminates Vercel ISR writes completely while keeping database queries to a minimum.
+let cachedSidebar: { data: { tournaments: any[]; siteConfigs: any[]; stores: any[] }; timestamp: number } | null = null;
+const SIDEBAR_CACHE_TTL_MS = 10 * 60 * 1000;
+
+async function getSidebarData() {
+  if (cachedSidebar && Date.now() - cachedSidebar.timestamp < SIDEBAR_CACHE_TTL_MS) {
+    return cachedSidebar.data;
+  }
+
+  try {
+    const [tournaments, siteConfigs, stores] = await Promise.all([
+      prisma.tournament.findMany({ select: { tcg: { select: { slug: true } } } }),
+      prisma.siteConfig.findMany(),
+      prisma.localStore.findMany({ orderBy: { name: "asc" } }),
+    ]);
+    const data = { tournaments, siteConfigs, stores };
+    cachedSidebar = { data, timestamp: Date.now() };
+    return data;
+  } catch (err) {
+    console.error("[Sidebar] DB unavailable:", err);
+    return cachedSidebar?.data ?? { tournaments: [], siteConfigs: [], stores: [] };
+  }
+}
 
 export async function Sidebar() {
   // Fetch real tournament counts per TCG, stores for location modal, and site configs
