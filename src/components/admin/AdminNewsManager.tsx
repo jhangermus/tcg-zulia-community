@@ -46,8 +46,8 @@ export function AdminNewsManager({ initialNews }: { initialNews: AdminNewsItem[]
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Handle local image upload from PC
-  const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle local image upload from PC → Supabase Storage
+  const handleImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -56,12 +56,16 @@ export function AdminNewsManager({ initialNews }: { initialNews: AdminNewsItem[]
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      setImagePreview(base64);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const { compressImage } = await import("@/lib/imageCompressor");
+      const { uploadToStorage } = await import("@/lib/uploadToStorage");
+      const compressed = await compressImage(file, 1200, 900, 0.78);
+      const publicUrl = await uploadToStorage(compressed, "news");
+      setImagePreview(publicUrl);
+    } catch (err) {
+      console.error("Error subiendo imagen de noticia:", err);
+      alert("Error al subir la imagen.");
+    }
   };
 
   // Sync external news (YGOrganization & Digimon)

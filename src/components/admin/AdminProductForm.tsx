@@ -30,27 +30,30 @@ export function AdminProductForm() {
   const [successMsg, setSuccessMsg] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle local file upload from PC (multiple files with automatic compression)
+  // Handle local file upload: compress locally then upload to Supabase Storage (URL stored, not base64)
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
     setIsCompressing(true);
     try {
-      const compressedList: string[] = [];
+      const { uploadToStorage } = await import("@/lib/uploadToStorage");
+      const uploadedUrls: string[] = [];
       for (const file of files) {
         if (file.size > 10 * 1024 * 1024) {
           alert(`El archivo ${file.name} es demasiado grande (máx 10MB).`);
           continue;
         }
-        // Comprimir a max 1200x1200 en WebP (pesa ~70-150KB cada una)
+        // 1. Comprimir a WebP max 1200x1200 para reducir tamaño antes de subir
         const compressed = await compressImage(file, 1200, 1200, 0.78);
-        compressedList.push(compressed);
+        // 2. Subir a Supabase Storage → obtener URL pública permanente
+        const publicUrl = await uploadToStorage(compressed, "products");
+        uploadedUrls.push(publicUrl);
       }
-      setImages((prev) => [...prev, ...compressedList]);
+      setImages((prev) => [...prev, ...uploadedUrls]);
     } catch (err) {
-      console.error("Error compressing images:", err);
-      alert("Ocurrió un error al procesar una o más imágenes.");
+      console.error("Error uploading images:", err);
+      alert("Ocurrió un error al subir una o más imágenes.");
     } finally {
       setIsCompressing(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

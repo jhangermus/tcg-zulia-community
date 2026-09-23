@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   ShoppingBag,
   Search,
@@ -10,6 +11,8 @@ import {
   X,
   Layers,
   Image as ImageIcon,
+  Link2,
+  Share2,
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 
@@ -45,12 +48,59 @@ export function PublicStoreClient({
   products,
   whatsappNumber = "584124721740",
 }: PublicStoreClientProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [copied, setCopied] = useState(false);
 
   // Modal & Carousel state
   const [activeModalProduct, setActiveModalProduct] = useState<ProductItem | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  // Open product modal if URL has ?p=<productId>
+  useEffect(() => {
+    const productId = searchParams.get("p");
+    if (productId) {
+      const found = products.find((p) => p.id === productId);
+      if (found) {
+        setActiveModalProduct(found);
+        setActiveImageIndex(0);
+      }
+    }
+  }, [searchParams, products]);
+
+  // Close modal and clear URL param
+  const closeModal = useCallback(() => {
+    setActiveModalProduct(null);
+    setCopied(false);
+    // Remove ?p= param from URL without page reload
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("p");
+    const newUrl = params.toString() ? `/tienda?${params.toString()}` : "/tienda";
+    router.replace(newUrl, { scroll: false });
+  }, [router, searchParams]);
+
+  // Open modal and set ?p= in URL
+  const openModal = useCallback((product: ProductItem) => {
+    setActiveModalProduct(product);
+    setActiveImageIndex(0);
+    setCopied(false);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("p", product.id);
+    router.replace(`/tienda?${params.toString()}`, { scroll: false });
+  }, [router, searchParams]);
+
+  // Copy shareable link to clipboard
+  const copyLink = useCallback(() => {
+    if (!activeModalProduct) return;
+    const url = `${window.location.origin}/tienda?p=${activeModalProduct.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  }, [activeModalProduct]);
 
   // Keyboard navigation for carousel
   useEffect(() => {
@@ -65,7 +115,7 @@ export function PublicStoreClient({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setActiveModalProduct(null);
+        closeModal();
       } else if (images.length > 1) {
         if (e.key === "ArrowLeft") {
           setActiveImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
@@ -173,8 +223,7 @@ export function PublicStoreClient({
               <div
                 key={product.id}
                 onClick={() => {
-                  setActiveModalProduct(product);
-                  setActiveImageIndex(0);
+                  openModal(product);
                 }}
                 className="bg-[#070b14] border border-slate-800 hover:border-yellow-400/60 overflow-hidden flex flex-col justify-between transition-all duration-200 group shadow-xl hover:-translate-y-1 hover:shadow-2xl clip-chamfer-tr relative cursor-pointer"
               >
@@ -282,7 +331,7 @@ export function PublicStoreClient({
       {activeModalProduct && (
         <div
           className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-y-auto animate-fade-in"
-          onClick={() => setActiveModalProduct(null)}
+          onClick={closeModal}
         >
           <div
             className="bg-[#090d16] border border-slate-700/80 rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col md:flex-row overflow-hidden shadow-2xl relative"
@@ -290,11 +339,34 @@ export function PublicStoreClient({
           >
             {/* Close Button */}
             <button
-              onClick={() => setActiveModalProduct(null)}
+              onClick={closeModal}
               className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-slate-900/90 hover:bg-yellow-400 hover:text-slate-950 text-slate-300 flex items-center justify-center transition-colors border border-slate-700 shadow-lg"
               title="Cerrar modal (Esc)"
             >
               <X className="w-5 h-5" />
+            </button>
+
+            {/* Share / Copy Link Button */}
+            <button
+              onClick={copyLink}
+              className={`absolute top-4 right-16 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-black transition-all shadow-lg ${
+                copied
+                  ? "bg-emerald-500 border-emerald-400 text-slate-950"
+                  : "bg-slate-900/90 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white"
+              }`}
+              title="Copiar enlace de este producto"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  ¡COPIADO!
+                </>
+              ) : (
+                <>
+                  <Link2 className="w-3.5 h-3.5" />
+                  COMPARTIR
+                </>
+              )}
             </button>
 
             {/* LEFT: Photo Carousel Section */}

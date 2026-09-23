@@ -59,15 +59,14 @@ export function AdminTournamentManager({
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      // Comprime y redimensiona a máx 1200px y calidad 0.75 en WebP
+      const { uploadToStorage } = await import("@/lib/uploadToStorage");
+      // Comprimir y luego subir a Supabase Storage
       const compressed = await compressImage(file, 1200, 1200, 0.75);
-      setPhotoPreview(compressed);
+      const publicUrl = await uploadToStorage(compressed, "tournaments");
+      setPhotoPreview(publicUrl);
     } catch (err) {
-      console.error("Error comprimiendo foto:", err);
-      // Fallback a lectura directa si falla
-      const reader = new FileReader();
-      reader.onloadend = () => setPhotoPreview(reader.result as string);
-      reader.readAsDataURL(file);
+      console.error("Error subiendo foto:", err);
+      alert("Error al subir la foto del torneo.");
     }
   };
 
@@ -75,14 +74,14 @@ export function AdminTournamentManager({
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      // El banner se redimensiona a formato panorámico (máx 1400px ancho)
+      const { uploadToStorage } = await import("@/lib/uploadToStorage");
+      // El banner se redimensiona a formato panorámico antes de subir
       const compressed = await compressImage(file, 1400, 800, 0.75);
-      setBannerPreview(compressed);
+      const publicUrl = await uploadToStorage(compressed, "tournaments");
+      setBannerPreview(publicUrl);
     } catch (err) {
-      console.error("Error comprimiendo banner:", err);
-      const reader = new FileReader();
-      reader.onloadend = () => setBannerPreview(reader.result as string);
-      reader.readAsDataURL(file);
+      console.error("Error subiendo banner:", err);
+      alert("Error al subir el banner del torneo.");
     }
   };
 

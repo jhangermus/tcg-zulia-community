@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { PublicStoreClient, ProductItem } from "@/components/store/PublicStoreClient";
 import { FaWhatsapp } from "react-icons/fa";
@@ -61,7 +62,9 @@ export default async function TiendaPage() {
       </div>
 
       {/* Interactive Store Client */}
-      <PublicStoreClient products={products} whatsappNumber={whatsappNumber} />
+      <Suspense fallback={<div className="text-slate-500 text-sm text-center py-12">Cargando tienda...</div>}>
+        <PublicStoreClient products={products} whatsappNumber={whatsappNumber} />
+      </Suspense>
     </div>
   );
 }
