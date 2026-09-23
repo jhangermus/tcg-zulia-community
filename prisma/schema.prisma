@@ -108,6 +108,7 @@ model Product {
   price       Float
   stock       Int      @default(0)
   imageUrl    String?
+  images      String[] @default([])
   category    String?  // "SLEEVES", "PLAYMATS", "SINGLES", "ACCESORIOS"
   status      String   @default("AVAILABLE") // "AVAILABLE", "OUT_OF_STOCK", "HIDDEN"
   whatsappNumber String? // Número personalizado de WhatsApp (ej: "+584124721740"). Si es null o vacío, usa el predeterminado (+584124721740).

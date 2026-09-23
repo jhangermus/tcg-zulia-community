@@ -49,15 +49,20 @@ export default async function AdminTiendaPage() {
           <div className="divide-y divide-slate-800">
             {products.map((product) => (
               <div key={product.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-800/30 transition-colors">
-                <div className="w-14 h-14 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
-                  {product.imageUrl ? (
+                <div className="w-14 h-14 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center relative">
+                  {(product.images && product.images[0]) || product.imageUrl ? (
                     <img
-                      src={product.imageUrl}
+                      src={(product.images && product.images[0]) || product.imageUrl!}
                       alt={product.name}
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <ShoppingBag className="w-6 h-6 text-slate-600" />
+                  )}
+                  {product.images && product.images.length > 1 && (
+                    <span className="absolute bottom-0 inset-x-0 bg-black/85 text-yellow-400 text-[8px] font-black text-center py-0.5">
+                      📷 {product.images.length}
+                    </span>
                   )}
                 </div>
 

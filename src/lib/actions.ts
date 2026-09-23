@@ -194,6 +194,7 @@ const ProductSchema = z.object({
   price: z.coerce.number().min(0),
   stock: z.coerce.number().int().min(0),
   imageUrl: z.string().optional(),
+  images: z.array(z.string()).default([]),
   category: z.string().optional(),
   status: z.enum(["AVAILABLE", "OUT_OF_STOCK", "HIDDEN"]),
   whatsappNumber: z.string().optional().nullable(),
@@ -220,12 +221,38 @@ export async function createProduct(formData: FormData) {
   const rawWhatsapp = formData.get("whatsappNumber")?.toString().trim();
   const sanitizedWhatsapp = rawWhatsapp ? sanitizeWhatsappNumber(rawWhatsapp) : null;
 
+  // Extraer imágenes múltiples (array o json)
+  const rawImages = formData.getAll("images").map((i) => i.toString().trim()).filter(Boolean);
+  let parsedImages: string[] = [];
+  if (rawImages.length > 0) {
+    for (const item of rawImages) {
+      if (item.startsWith("[") && item.endsWith("]")) {
+        try {
+          const arr = JSON.parse(item);
+          if (Array.isArray(arr)) parsedImages.push(...arr.filter(Boolean));
+        } catch {
+          parsedImages.push(item);
+        }
+      } else {
+        parsedImages.push(item);
+      }
+    }
+  }
+
+  const singleImageUrl = formData.get("imageUrl")?.toString().trim();
+  if (singleImageUrl && !parsedImages.includes(singleImageUrl)) {
+    parsedImages.unshift(singleImageUrl);
+  }
+
+  const primaryImage = parsedImages[0] || singleImageUrl || undefined;
+
   const validated = ProductSchema.safeParse({
     name: formData.get("name"),
     description: formData.get("description") || undefined,
     price: formData.get("price"),
     stock: formData.get("stock"),
-    imageUrl: formData.get("imageUrl") || undefined,
+    imageUrl: primaryImage,
+    images: parsedImages,
     category: formData.get("category") || undefined,
     status: formData.get("status") || "AVAILABLE",
     whatsappNumber: sanitizedWhatsapp,

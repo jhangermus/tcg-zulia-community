@@ -17,17 +17,26 @@ export default async function TiendaPage() {
 
   const whatsappNumber = whatsappConfig?.value || "584124721740";
 
-  const products: ProductItem[] = dbProducts.map((p) => ({
-    id: p.id,
-    name: p.name,
-    description: p.description,
-    price: p.price,
-    stock: p.stock,
-    imageUrl: p.imageUrl,
-    category: p.category,
-    status: p.status,
-    whatsappNumber: p.whatsappNumber,
-  }));
+  const products: ProductItem[] = dbProducts.map((p) => {
+    const imagesList = Array.isArray(p.images) && p.images.length > 0 
+      ? p.images 
+      : p.imageUrl 
+      ? [p.imageUrl] 
+      : [];
+
+    return {
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      price: p.price,
+      stock: p.stock,
+      imageUrl: p.imageUrl || (imagesList[0] ?? null),
+      images: imagesList,
+      category: p.category,
+      status: p.status,
+      whatsappNumber: p.whatsappNumber,
+    };
+  });
 
   return (
     <div className="p-6 md:p-8 space-y-8 bg-[#05080f] min-h-screen">

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Plus, Upload, Image as ImageIcon, Check, RefreshCw, X, ShoppingBag, Phone } from "lucide-react";
+import { Plus, Upload, Image as ImageIcon, Check, RefreshCw, X, ShoppingBag, Phone, Star, Trash2 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { createProduct } from "@/lib/actions";
+import { compressImage } from "@/lib/imageCompressor";
 
-const CATEGORIES = ["SLEEVES", "PLAYMATS", "ACCESORIOS", "SINGLES", "CAJAS Y SOBRES", "OTROS"];
+const CATEGORIES = ["SLEEVES", "PLAYMATS", "ACCESORIOS", "SINGLES", "CAJAS Y SOBRES", "DECKS COMPLETOS", "OTROS"];
 
 export function AdminProductForm() {
   const [name, setName] = useState("");
@@ -19,38 +20,66 @@ export function AdminProductForm() {
   const [useDefaultWhatsapp, setUseDefaultWhatsapp] = useState(true);
   const [customWhatsapp, setCustomWhatsapp] = useState("");
   
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  // Multiple images state
+  const [images, setImages] = useState<string[]>([]);
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [uploadMode, setUploadMode] = useState<"file" | "url">("file");
+  const [isCompressing, setIsCompressing] = useState(false);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle local file upload from PC
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Handle local file upload from PC (multiple files with automatic compression)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    if (file.size > 4 * 1024 * 1024) {
-      alert("La imagen debe pesar menos de 4MB");
-      return;
+    setIsCompressing(true);
+    try {
+      const compressedList: string[] = [];
+      for (const file of files) {
+        if (file.size > 10 * 1024 * 1024) {
+          alert(`El archivo ${file.name} es demasiado grande (máx 10MB).`);
+          continue;
+        }
+        // Comprimir a max 1200x1200 en WebP (pesa ~70-150KB cada una)
+        const compressed = await compressImage(file, 1200, 1200, 0.78);
+        compressedList.push(compressed);
+      }
+      setImages((prev) => [...prev, ...compressedList]);
+    } catch (err) {
+      console.error("Error compressing images:", err);
+      alert("Ocurrió un error al procesar una o más imágenes.");
+    } finally {
+      setIsCompressing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
   };
 
-  const handleUrlChange = (val: string) => {
-    setImageUrlInput(val);
-    setImagePreview(val.trim() || null);
+  const handleAddUrl = () => {
+    const trimmed = imageUrlInput.trim();
+    if (!trimmed) return;
+    setImages((prev) => [...prev, trimmed]);
+    setImageUrlInput("");
   };
 
-  const clearImage = () => {
-    setImagePreview(null);
+  const removeImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const makeCover = (index: number) => {
+    if (index === 0) return;
+    setImages((prev) => {
+      const copy = [...prev];
+      const [item] = copy.splice(index, 1);
+      copy.unshift(item);
+      return copy;
+    });
+  };
+
+  const clearAllImages = () => {
+    setImages([]);
     setImageUrlInput("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -74,8 +103,13 @@ export function AdminProductForm() {
       if (!useDefaultWhatsapp && customWhatsapp.trim()) {
         formData.append("whatsappNumber", customWhatsapp.trim());
       }
-      if (imagePreview) {
-        formData.append("imageUrl", imagePreview);
+      
+      // Pasar todas las imágenes cargadas
+      images.forEach((img) => {
+        formData.append("images", img);
+      });
+      if (images[0]) {
+        formData.append("imageUrl", images[0]);
       }
 
       await createProduct(formData);
@@ -87,7 +121,7 @@ export function AdminProductForm() {
       setStock("5");
       setUseDefaultWhatsapp(true);
       setCustomWhatsapp("");
-      clearImage();
+      clearAllImages();
       setSuccessMsg(true);
       setTimeout(() => setSuccessMsg(false), 3000);
     } catch (err) {
@@ -254,13 +288,18 @@ export function AdminProductForm() {
             )}
           </div>
 
-          {/* Image Upload Section */}
-          <div className="md:col-span-2 lg:col-span-3 border-t border-slate-800/80 pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-xs font-bold text-slate-300 tracking-wider">
-                FOTO O IMAGEN DEL PRODUCTO
-              </label>
-              <div className="flex gap-2">
+          {/* Image Upload Section (Multi-Photo Supported) */}
+          <div className="md:col-span-2 lg:col-span-3 border-t border-slate-800/80 pt-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 tracking-wider">
+                  FOTOS DEL PRODUCTO (PUEDES SUBIR VARIAS)
+                </label>
+                <p className="text-[11px] text-slate-500">
+                  Ideal para publicar decks completos o productos con varias vistas o cartas.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setUploadMode("file")}
@@ -283,69 +322,155 @@ export function AdminProductForm() {
                 >
                   Pegar Enlace URL
                 </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-              <div className="md:col-span-2">
-                {uploadMode === "file" ? (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-slate-700 hover:border-yellow-400 rounded-xl p-6 text-center cursor-pointer bg-slate-900/50 hover:bg-slate-900 transition-colors flex flex-col items-center justify-center gap-2"
+                {images.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearAllImages}
+                    className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30 transition-colors"
                   >
-                    <Upload className="w-8 h-8 text-yellow-400/80" />
-                    <p className="text-xs font-bold text-slate-200">
-                      Haz clic para seleccionar una foto desde tu PC
-                    </p>
-                    <p className="text-[10px] text-slate-500">Soporta PNG, JPG, JPEG o WEBP (hasta 4MB)</p>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <input
-                      type="url"
-                      value={imageUrlInput}
-                      onChange={(e) => handleUrlChange(e.target.value)}
-                      placeholder="https://ejemplo.com/foto-producto.jpg"
-                      className="w-full bg-slate-900 border border-slate-700 text-white px-3.5 py-2.5 rounded-lg text-xs focus:outline-none focus:border-yellow-400"
-                    />
-                    <p className="text-[10px] text-slate-500 mt-1">Pega una URL directa de la imagen</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Live Preview Box */}
-              <div className="flex flex-col items-center justify-center p-3 bg-slate-900/80 rounded-xl border border-slate-800 min-h-[140px] relative">
-                {imagePreview ? (
-                  <>
-                    <img
-                      src={imagePreview}
-                      alt="Vista previa"
-                      className="max-h-28 w-auto object-contain rounded-lg shadow-md"
-                    />
-                    <button
-                      type="button"
-                      onClick={clearImage}
-                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center text-xs hover:bg-red-500 transition-colors"
-                      title="Eliminar foto"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </>
-                ) : (
-                  <div className="text-center text-slate-600">
-                    <ImageIcon className="w-8 h-8 mx-auto mb-1 opacity-40" />
-                    <span className="text-[10px] font-semibold">Sin foto seleccionada</span>
-                  </div>
+                    Borrar todas
+                  </button>
                 )}
               </div>
             </div>
+
+            {/* Upload Selector */}
+            {uploadMode === "file" ? (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-slate-700 hover:border-yellow-400 rounded-xl p-5 text-center cursor-pointer bg-slate-900/50 hover:bg-slate-900 transition-colors flex flex-col items-center justify-center gap-2"
+              >
+                {isCompressing ? (
+                  <div className="flex items-center gap-2 text-yellow-400 text-xs font-bold py-2 animate-pulse">
+                    <RefreshCw className="w-5 h-5 animate-spin" /> Optimizando y comprimiendo fotos...
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-7 h-7 text-yellow-400/80" />
+                    <p className="text-xs font-bold text-slate-200">
+                      Haz clic para seleccionar una o varias fotos desde tu PC
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      Puedes seleccionar múltiples fotos a la vez (PNG, JPG o WEBP). Se comprimen automáticamente para no saturar la web.
+                    </p>
+                  </>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={imageUrlInput}
+                  onChange={(e) => setImageUrlInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddUrl();
+                    }
+                  }}
+                  placeholder="https://ejemplo.com/foto-deck.jpg"
+                  className="w-full bg-slate-900 border border-slate-700 text-white px-3.5 py-2 rounded-lg text-xs focus:outline-none focus:border-yellow-400"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddUrl}
+                  className="bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black px-4 py-2 rounded-lg text-xs whitespace-nowrap"
+                >
+                  + Agregar Foto
+                </button>
+              </div>
+            )}
+
+            {/* Multi-Photo Thumbnails Gallery */}
+            {images.length > 0 ? (
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-yellow-400 flex items-center gap-1.5">
+                    <Check className="w-4 h-4 text-emerald-400" />
+                    {images.length} {images.length === 1 ? "foto cargada" : "fotos cargadas"} (la primera es la portada)
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    Arrastra o haz clic en "Portada" para elegir cuál se muestra primero
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {images.map((imgUrl, idx) => (
+                    <div
+                      key={idx}
+                      className={`group relative aspect-square bg-slate-950 rounded-xl overflow-hidden border transition-all ${
+                        idx === 0
+                          ? "border-yellow-400 ring-2 ring-yellow-400/30 shadow-lg"
+                          : "border-slate-800 hover:border-slate-600"
+                      }`}
+                    >
+                      <img
+                        src={imgUrl}
+                        alt={`Foto ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+
+                      {/* Index Tag */}
+                      <span className="absolute top-1.5 left-1.5 text-[9px] font-black px-1.5 py-0.5 rounded bg-black/80 text-white backdrop-blur-sm">
+                        #{idx + 1}
+                      </span>
+
+                      {/* Cover Badge */}
+                      {idx === 0 && (
+                        <span className="absolute bottom-1.5 left-1.5 right-1.5 text-[9px] font-black text-center py-0.5 rounded bg-yellow-400 text-slate-950 shadow">
+                          👑 PORTADA
+                        </span>
+                      )}
+
+                      {/* Hover Actions */}
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-2">
+                        {idx !== 0 && (
+                          <button
+                            type="button"
+                            onClick={() => makeCover(idx)}
+                            className="w-full text-[9px] font-black py-1 px-1.5 rounded bg-yellow-400 hover:bg-yellow-300 text-slate-950 transition-colors"
+                          >
+                            Hacer Portada
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeImage(idx)}
+                          className="w-full text-[9px] font-black py-1 px-1.5 rounded bg-red-600 hover:bg-red-500 text-white transition-colors flex items-center justify-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" /> Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Add more button tile */}
+                  <div
+                    onClick={() => {
+                      if (uploadMode === "file") {
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                    className="aspect-square bg-slate-900/60 hover:bg-slate-900 border border-dashed border-slate-700 hover:border-yellow-400 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:text-white cursor-pointer transition-colors p-2 text-center"
+                  >
+                    <Plus className="w-6 h-6 text-yellow-400 mb-1" />
+                    <span className="text-[10px] font-bold">Agregar más fotos</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-3 text-slate-500 text-xs flex items-center justify-center gap-1.5">
+                <ImageIcon className="w-4 h-4 opacity-40" /> Sin fotos cargadas aún (puedes subir una o varias)
+              </div>
+            )}
           </div>
         </div>
 
